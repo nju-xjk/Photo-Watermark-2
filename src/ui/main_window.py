@@ -20,7 +20,9 @@ from ..core.models import ProjectState
 from ..core.image_loader import scan_directory_for_images, create_image_items
 from .image_list import ImageListWidget
 from .preview import PreviewWidget
-from .panels import TextWatermarkPanel
+from .panels import TextWatermarkPanel, ExportPanel
+from ..core.models import ExportOptions
+from ..core.exporter import export_image
 
 
 class MainWindow(QMainWindow):
@@ -78,9 +80,11 @@ class MainWindow(QMainWindow):
         self.text_panel = TextWatermarkPanel()
         self.text_panel.textChanged.connect(self._on_text_changed)
         self.text_panel.opacityChanged.connect(self._on_opacity_changed)
+        self.text_panel.gridChanged.connect(self._on_grid_changed)
         tabs.addTab(self.text_panel, "文本水印")
         tabs.addTab(QWidget(), "图片水印")
-        tabs.addTab(QWidget(), "导出设置")
+        self.export_panel = ExportPanel()
+        tabs.addTab(self.export_panel, "导出设置")
         tabs.addTab(QWidget(), "模板")
         right_layout.addWidget(tabs)
 
@@ -107,7 +111,31 @@ class MainWindow(QMainWindow):
         out_dir = QFileDialog.getExistingDirectory(self, "选择输出文件夹")
         if not out_dir:
             return
-        self.statusBar().showMessage(f"输出到: {out_dir}", 3000)
+        if not hasattr(self, "state") or not self.state.images:
+            self.statusBar().showMessage("请先导入图片", 3000)
+            return
+        # 禁止与任一输入目录相同
+        import_dirs = {str(Path(item.path).parent) for item in self.state.images}
+        if out_dir in import_dirs:
+            self.statusBar().showMessage("输出目录不能与原目录相同", 4000)
+            return
+
+        options = ExportOptions(
+            output_dir=out_dir,
+            format=self.export_panel.format_combo.currentText(),
+            naming_mode=self.export_panel.naming_mode.currentText(),
+            naming_value=self.export_panel.naming_value.text(),
+            jpeg_quality=self.export_panel.jpeg_quality.value(),
+        )
+
+        count = 0
+        for item in self.state.images:
+            try:
+                export_image(item.path, options, self.state.text_wm)
+                count += 1
+            except Exception:
+                pass
+        self.statusBar().showMessage(f"已导出 {count} 张图片到: {out_dir}", 4000)
 
     # ----- helpers & callbacks -----
     def _on_files_dropped(self, paths: list[str]) -> None:
@@ -139,8 +167,18 @@ class MainWindow(QMainWindow):
 
     def _on_text_changed(self, text: str) -> None:
         self.preview_widget.set_watermark_text(text)
+        if hasattr(self, "state"):
+            self.state.text_wm.content = text
 
     def _on_opacity_changed(self, value: int) -> None:
         self.preview_widget.set_watermark_opacity(value / 100.0)
+        if hasattr(self, "state"):
+            self.state.text_wm.opacity = value
+
+    def _on_grid_changed(self, idx: int) -> None:
+        if not hasattr(self, "state"):
+            return
+        self.state.text_wm.position_mode = "grid"
+        self.state.text_wm.grid_slot = idx
 
 
