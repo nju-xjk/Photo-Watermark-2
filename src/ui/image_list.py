@@ -14,7 +14,7 @@ class ImageListWidget(QListWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setAcceptDrops(True)
-        self.setSelectionMode(self.SingleSelection)
+        self.setSelectionMode(QListWidget.SingleSelection)
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
         if event.mimeData().hasUrls():
