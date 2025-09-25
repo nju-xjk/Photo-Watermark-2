@@ -89,6 +89,13 @@ class TextWatermarkPanel(QWidget):
         if c.isValid():
             self.colorChanged.emit()
 
+    def _on_grid_clicked(self, idx: int) -> None:
+        # Ensure only one is checked and emit selected index
+        if hasattr(self, "grid_buttons"):
+            for i, btn in enumerate(self.grid_buttons):
+                btn.setChecked(i == idx)
+        self.gridChanged.emit(idx)
+
 
 class ImageWatermarkPanel(QWidget):
     changed = Signal()

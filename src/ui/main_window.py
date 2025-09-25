@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QStatusBar,
 )
 from PySide6.QtGui import QPixmap
+from pathlib import Path
 
 from ..core.models import ProjectState
 from ..core.image_loader import scan_directory_for_images, create_image_items
