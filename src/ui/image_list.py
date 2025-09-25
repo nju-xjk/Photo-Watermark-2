@@ -15,6 +15,8 @@ class ImageListWidget(QListWidget):
     def __init__(self) -> None:
         super().__init__()
         self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDefaultDropAction(Qt.CopyAction)
         self.setSelectionMode(QListWidget.SingleSelection)
 
     def dragEnterEvent(self, event: QDragEnterEvent) -> None:
@@ -22,6 +24,12 @@ class ImageListWidget(QListWidget):
             event.acceptProposedAction()
         else:
             super().dragEnterEvent(event)
+
+    def dragMoveEvent(self, event: QDragEnterEvent) -> None:
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
+        else:
+            super().dragMoveEvent(event)
 
     def dropEvent(self, event: QDropEvent) -> None:
         paths: List[str] = []
@@ -31,7 +39,9 @@ class ImageListWidget(QListWidget):
                 paths.append(p)
         if paths:
             self.fileDropped.emit(paths)
-        super().dropEvent(event)
+            event.acceptProposedAction()
+        else:
+            super().dropEvent(event)
 
     def add_path_item(self, path: str) -> None:
         item = QListWidgetItem(Path(path).name)
