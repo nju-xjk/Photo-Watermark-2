@@ -17,6 +17,18 @@ class TextWatermarkConfig:
     # free position as relative coords in image rect (0..1). None means center
     rel_x: Optional[float] = None
     rel_y: Optional[float] = None
+    # advanced
+    font_family: Optional[str] = None
+    font_size: int = 36
+    bold: bool = False
+    italic: bool = False
+    color_rgba: tuple[int, int, int, int] = (255, 255, 255, 255)
+    shadow: bool = False
+    shadow_color_rgba: tuple[int, int, int, int] = (0, 0, 0, 160)
+    stroke: bool = False
+    stroke_width: int = 2
+    stroke_color_rgba: tuple[int, int, int, int] = (0, 0, 0, 200)
+    rotation: float = 0.0
 
 
 @dataclass
@@ -30,6 +42,13 @@ class ProjectState:
     images: List[ImageItem] = field(default_factory=list)
     image_path_set: set[str] = field(default_factory=set)
     text_wm: TextWatermarkConfig = field(default_factory=TextWatermarkConfig)
+    # image watermark
+    image_wm_enabled: bool = False
+    image_wm_path: Optional[str] = None
+    image_wm_scale: float = 0.3
+    image_wm_opacity: int = 50
+    image_wm_rotation: float = 0.0
+    image_wm_grid_slot: int = 8
 
 
 @dataclass

@@ -13,6 +13,7 @@ class PreviewWidget(QWidget):
         self._pixmap = None
         self._wm_text = "Watermark"
         self._wm_opacity = 0.5
+        self._wm_rotation = 0.0
         self._wm_pos = None  # type: Optional[QPoint]
         self.setMinimumSize(200, 200)
         self.setMouseTracking(True)
@@ -27,6 +28,10 @@ class PreviewWidget(QWidget):
 
     def set_watermark_opacity(self, opacity01: float) -> None:
         self._wm_opacity = max(0.0, min(1.0, opacity01))
+        self.update()
+
+    def set_watermark_rotation(self, degrees: float) -> None:
+        self._wm_rotation = degrees
         self.update()
 
     def mousePressEvent(self, event) -> None:
@@ -55,8 +60,12 @@ class PreviewWidget(QWidget):
             text_rect = painter.fontMetrics().boundingRect(self._wm_text)
 
             pos = self._wm_pos or QPoint(self.width()//2, self.height()//2)
-            draw_x = pos.x() - text_rect.width() // 2
-            draw_y = pos.y() + text_rect.height() // 2
+            painter.save()
+            painter.translate(pos)
+            painter.rotate(self._wm_rotation)
+            draw_x = - text_rect.width() // 2
+            draw_y = + text_rect.height() // 2
             painter.drawText(draw_x, draw_y, self._wm_text)
+            painter.restore()
 
 

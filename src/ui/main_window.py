@@ -20,7 +20,7 @@ from ..core.models import ProjectState
 from ..core.image_loader import scan_directory_for_images, create_image_items
 from .image_list import ImageListWidget
 from .preview import PreviewWidget
-from .panels import TextWatermarkPanel, ExportPanel
+from .panels import TextWatermarkPanel, ExportPanel, ImageWatermarkPanel
 from ..core.models import ExportOptions
 from ..core.exporter import export_image
 
@@ -82,7 +82,8 @@ class MainWindow(QMainWindow):
         self.text_panel.opacityChanged.connect(self._on_opacity_changed)
         self.text_panel.gridChanged.connect(self._on_grid_changed)
         tabs.addTab(self.text_panel, "文本水印")
-        tabs.addTab(QWidget(), "图片水印")
+        self.image_panel = ImageWatermarkPanel()
+        tabs.addTab(self.image_panel, "图片水印")
         self.export_panel = ExportPanel()
         tabs.addTab(self.export_panel, "导出设置")
         tabs.addTab(QWidget(), "模板")
@@ -131,7 +132,7 @@ class MainWindow(QMainWindow):
         count = 0
         for item in self.state.images:
             try:
-                export_image(item.path, options, self.state.text_wm)
+                export_image(item.path, options, self.state.text_wm, self.state)
                 count += 1
             except Exception:
                 pass
@@ -180,5 +181,7 @@ class MainWindow(QMainWindow):
             return
         self.state.text_wm.position_mode = "grid"
         self.state.text_wm.grid_slot = idx
+
+    # TODO: connect more advanced text and image controls to state and preview
 
 
