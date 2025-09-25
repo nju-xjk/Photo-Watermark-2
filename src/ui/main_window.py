@@ -82,6 +82,10 @@ class MainWindow(QMainWindow):
         self.text_panel.textChanged.connect(self._on_text_changed)
         self.text_panel.opacityChanged.connect(self._on_opacity_changed)
         self.text_panel.gridChanged.connect(self._on_grid_changed)
+        self.text_panel.fontChanged.connect(self._on_font_changed)
+        self.text_panel.styleChanged.connect(self._on_style_changed)
+        self.text_panel.colorChanged.connect(self._on_color_changed)
+        self.text_panel.rotationChanged.connect(self._on_rotation_changed)
         tabs.addTab(self.text_panel, "文本水印")
         self.image_panel = ImageWatermarkPanel()
         tabs.addTab(self.image_panel, "图片水印")
@@ -131,13 +135,17 @@ class MainWindow(QMainWindow):
         )
 
         count = 0
+        errors = 0
         for item in self.state.images:
             try:
                 export_image(item.path, options, self.state.text_wm, self.state)
                 count += 1
-            except Exception:
-                pass
-        self.statusBar().showMessage(f"已导出 {count} 张图片到: {out_dir}", 4000)
+            except Exception as e:
+                errors += 1
+        if errors:
+            self.statusBar().showMessage(f"已导出 {count} 张，失败 {errors} 张（查看日志或权限）", 6000)
+        else:
+            self.statusBar().showMessage(f"已导出 {count} 张图片到: {out_dir}", 4000)
 
     # ----- helpers & callbacks -----
     def _on_files_dropped(self, paths: list[str]) -> None:
@@ -182,6 +190,43 @@ class MainWindow(QMainWindow):
             return
         self.state.text_wm.position_mode = "grid"
         self.state.text_wm.grid_slot = idx
+        self.preview_widget.set_watermark_grid_slot(idx)
+
+    def _on_font_changed(self) -> None:
+        if not hasattr(self, "state"):
+            return
+        family = self.text_panel.font_family.text().strip()
+        size = self.text_panel.font_size.value()
+        self.state.text_wm.font_family = family or None
+        self.state.text_wm.font_size = size
+        self.preview_widget.set_watermark_font(family, size, self.state.text_wm.bold, self.state.text_wm.italic)
+
+    def _on_style_changed(self) -> None:
+        if not hasattr(self, "state"):
+            return
+        self.state.text_wm.bold = self.text_panel.bold_cb.isChecked()
+        self.state.text_wm.italic = self.text_panel.italic_cb.isChecked()
+        self.state.text_wm.shadow = self.text_panel.shadow_cb.isChecked()
+        self.state.text_wm.stroke = self.text_panel.stroke_cb.isChecked()
+        self.state.text_wm.stroke_width = self.text_panel.stroke_w.value()
+        self.preview_widget.set_watermark_font(self.text_panel.font_family.text().strip(), self.text_panel.font_size.value(), self.state.text_wm.bold, self.state.text_wm.italic)
+
+    def _on_color_changed(self) -> None:
+        if not hasattr(self, "state"):
+            return
+        # Pull color from dialog's current color stored on widget palette
+        # Simpler: use a standard color dialog fetch
+        from PySide6.QtWidgets import QColorDialog
+        c = QColorDialog.getColor()
+        if c.isValid():
+            self.state.text_wm.color_rgba = (c.red(), c.green(), c.blue(), 255)
+            self.preview_widget.set_watermark_color(c)
+
+    def _on_rotation_changed(self, deg: int) -> None:
+        if not hasattr(self, "state"):
+            return
+        self.state.text_wm.rotation = float(deg)
+        self.preview_widget.set_watermark_rotation(float(deg))
 
     # TODO: connect more advanced text and image controls to state and preview
 

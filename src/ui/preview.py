@@ -15,6 +15,13 @@ class PreviewWidget(QWidget):
         self._wm_opacity = 0.5
         self._wm_rotation = 0.0
         self._wm_pos = None  # type: Optional[QPoint]
+        self._wm_position_mode = "grid"
+        self._wm_grid_slot = 8
+        self._wm_color = QColor(255, 255, 255)
+        self._wm_font_family = ""
+        self._wm_font_size = 20
+        self._wm_bold = False
+        self._wm_italic = False
         self.setMinimumSize(200, 200)
         self.setMouseTracking(True)
 
@@ -34,6 +41,23 @@ class PreviewWidget(QWidget):
         self._wm_rotation = degrees
         self.update()
 
+    def set_watermark_grid_slot(self, slot: int) -> None:
+        self._wm_grid_slot = max(0, min(8, slot))
+        self._wm_position_mode = "grid"
+        self._wm_pos = None
+        self.update()
+
+    def set_watermark_font(self, family: str, size: int, bold: bool, italic: bool) -> None:
+        self._wm_font_family = family or ""
+        self._wm_font_size = size
+        self._wm_bold = bold
+        self._wm_italic = italic
+        self.update()
+
+    def set_watermark_color(self, color: QColor) -> None:
+        self._wm_color = color
+        self.update()
+
     def mousePressEvent(self, event) -> None:
         if event.button() == Qt.LeftButton:
             self._wm_pos = event.position().toPoint()
@@ -44,6 +68,7 @@ class PreviewWidget(QWidget):
         painter = QPainter(self)
         painter.fillRect(self.rect(), QColor(34, 34, 34))
 
+        scaled = None
         if self._pixmap:
             # fit to widget while preserving aspect ratio
             scaled = self._pixmap.scaled(self.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation)
@@ -53,13 +78,35 @@ class PreviewWidget(QWidget):
 
         if self._wm_text:
             painter.setOpacity(self._wm_opacity)
-            painter.setPen(QColor(255, 255, 255))
-            font = QFont()
-            font.setPointSize(20)
+            painter.setPen(self._wm_color)
+            font = QFont(self._wm_font_family, self._wm_font_size)
+            font.setBold(self._wm_bold)
+            font.setItalic(self._wm_italic)
             painter.setFont(font)
             text_rect = painter.fontMetrics().boundingRect(self._wm_text)
-
-            pos = self._wm_pos or QPoint(self.width()//2, self.height()//2)
+            # position
+            if self._wm_pos is not None:
+                pos = self._wm_pos
+            elif self._wm_position_mode == "grid" and scaled is not None:
+                img_x = (self.width() - scaled.width()) // 2
+                img_y = (self.height() - scaled.height()) // 2
+                col = self._wm_grid_slot % 3
+                row = self._wm_grid_slot // 3
+                if col == 0:
+                    px = img_x + 24 + text_rect.width() // 2
+                elif col == 1:
+                    px = img_x + scaled.width() // 2
+                else:
+                    px = img_x + scaled.width() - 24 - text_rect.width() // 2
+                if row == 0:
+                    py = img_y + 24 + text_rect.height() // 2
+                elif row == 1:
+                    py = img_y + scaled.height() // 2
+                else:
+                    py = img_y + scaled.height() - 24 - text_rect.height() // 2
+                pos = QPoint(px, py)
+            else:
+                pos = QPoint(self.width()//2, self.height()//2)
             painter.save()
             painter.translate(pos)
             painter.rotate(self._wm_rotation)
