@@ -6,6 +6,7 @@ from typing import List
 from PySide6.QtCore import Qt, QMimeData, QUrl, Signal
 from PySide6.QtGui import QDragEnterEvent, QDropEvent, QPixmap, QIcon
 from PySide6.QtWidgets import QListWidget, QListWidgetItem
+from PySide6.QtGui import QIcon, QPixmap
 
 
 class ImageListWidget(QListWidget):
@@ -35,6 +36,14 @@ class ImageListWidget(QListWidget):
     def add_path_item(self, path: str) -> None:
         item = QListWidgetItem(Path(path).name)
         item.setToolTip(path)
+        # try thumbnail icon
+        try:
+            pix = QPixmap(path)
+            if not pix.isNull():
+                icon = QIcon(pix.scaled(64, 64, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                item.setIcon(icon)
+        except Exception:
+            pass
         self.addItem(item)
 
 

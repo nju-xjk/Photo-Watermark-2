@@ -254,6 +254,15 @@ class MainWindow(QMainWindow):
             if btn.isChecked():
                 self.state.image_wm_grid_slot = i
                 break
+        # reflect to preview
+        self.preview_widget.set_image_watermark(
+            self.state.image_wm_enabled,
+            self.state.image_wm_path,
+            self.state.image_wm_scale,
+            self.state.image_wm_opacity / 100.0,
+            self.state.image_wm_rotation,
+            self.state.image_wm_grid_slot,
+        )
 
     # ----- templates -----
     def _on_template_save(self, name: str) -> None:
