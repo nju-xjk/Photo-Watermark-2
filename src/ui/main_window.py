@@ -21,9 +21,10 @@ from ..core.models import ProjectState
 from ..core.image_loader import scan_directory_for_images, create_image_items
 from .image_list import ImageListWidget
 from .preview import PreviewWidget
-from .panels import TextWatermarkPanel, ExportPanel, ImageWatermarkPanel
+from .panels import TextWatermarkPanel, ExportPanel, ImageWatermarkPanel, TemplatesPanel
 from ..core.models import ExportOptions
 from ..core.exporter import export_image
+from ..core.templates import save_last, load_last, save_named, list_templates, delete_template
 
 
 class MainWindow(QMainWindow):
@@ -88,10 +89,15 @@ class MainWindow(QMainWindow):
         self.text_panel.rotationChanged.connect(self._on_rotation_changed)
         tabs.addTab(self.text_panel, "文本水印")
         self.image_panel = ImageWatermarkPanel()
+        self.image_panel.changed.connect(self._on_image_wm_changed)
         tabs.addTab(self.image_panel, "图片水印")
         self.export_panel = ExportPanel()
         tabs.addTab(self.export_panel, "导出设置")
-        tabs.addTab(QWidget(), "模板")
+        self.templates_panel = TemplatesPanel()
+        self.templates_panel.saveRequested.connect(self._on_template_save)
+        self.templates_panel.loadRequested.connect(self._on_template_load)
+        self.templates_panel.deleteRequested.connect(self._on_template_delete)
+        tabs.addTab(self.templates_panel, "模板")
         right_layout.addWidget(tabs)
 
         root_layout.addWidget(left_panel, 2)
@@ -132,6 +138,8 @@ class MainWindow(QMainWindow):
             naming_mode=self.export_panel.naming_mode.currentText(),
             naming_value=self.export_panel.naming_value.text(),
             jpeg_quality=self.export_panel.jpeg_quality.value(),
+            resize_mode=self.export_panel.resize_mode.currentText(),
+            resize_value=self.export_panel.resize_value.value(),
         )
 
         count = 0
@@ -146,6 +154,10 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(f"已导出 {count} 张，失败 {errors} 张（查看日志或权限）", 6000)
         else:
             self.statusBar().showMessage(f"已导出 {count} 张图片到: {out_dir}", 4000)
+        try:
+            save_last(self.state, options)
+        except Exception:
+            pass
 
     # ----- helpers & callbacks -----
     def _on_files_dropped(self, paths: list[str]) -> None:
@@ -227,6 +239,97 @@ class MainWindow(QMainWindow):
             return
         self.state.text_wm.rotation = float(deg)
         self.preview_widget.set_watermark_rotation(float(deg))
+
+    def _on_image_wm_changed(self) -> None:
+        if not hasattr(self, "state"):
+            return
+        self.state.image_wm_enabled = self.image_panel.enable_cb.isChecked()
+        btn_text = self.image_panel.choose_btn.text()
+        self.state.image_wm_path = btn_text if btn_text and btn_text != "选择图片…" else None
+        self.state.image_wm_scale = self.image_panel.scale_slider.value() / 100.0
+        self.state.image_wm_opacity = self.image_panel.opacity_slider.value()
+        self.state.image_wm_rotation = float(self.image_panel.rotation_slider.value())
+        # grid index
+        for i, btn in enumerate(self.image_panel.grid_buttons):
+            if btn.isChecked():
+                self.state.image_wm_grid_slot = i
+                break
+
+    # ----- templates -----
+    def _on_template_save(self, name: str) -> None:
+        if not hasattr(self, "state"):
+            return
+        if not name.strip():
+            name = "template"
+        opts = ExportOptions(
+            output_dir="",
+            format=self.export_panel.format_combo.currentText(),
+            naming_mode=self.export_panel.naming_mode.currentText(),
+            naming_value=self.export_panel.naming_value.text(),
+            jpeg_quality=self.export_panel.jpeg_quality.value(),
+            resize_mode=self.export_panel.resize_mode.currentText(),
+            resize_value=self.export_panel.resize_value.value(),
+        )
+        save_named(name, self.state, opts)
+        self._refresh_templates_list()
+        self.statusBar().showMessage("模板已保存", 3000)
+
+    def _on_template_load(self, name: str) -> None:
+        try:
+            p, e = load_last() if not name.strip() else self._load_named(name)
+        except Exception:
+            p, e = None, None
+        if p is not None and e is not None:
+            self.state = p
+            # Reflect export options to panel
+            self.export_panel.format_combo.setCurrentText(e.format)
+            self.export_panel.naming_mode.setCurrentText(e.naming_mode)
+            self.export_panel.naming_value.setText(e.naming_value)
+            self.export_panel.jpeg_quality.setValue(e.jpeg_quality)
+            self.export_panel.resize_mode.setCurrentText(e.resize_mode)
+            self.export_panel.resize_value.setValue(e.resize_value)
+            # Refresh list and preview
+            self.image_list.clear()
+            for it in self.state.images:
+                self.image_list.add_path_item(it.path)
+            if self.state.images:
+                self.image_list.setCurrentRow(0)
+            self.statusBar().showMessage("模板已加载", 3000)
+
+    def _on_template_delete(self, name: str) -> None:
+        if not name.strip():
+            return
+        delete_template(f"{name}.json" if not name.endswith(".json") else name)
+        self._refresh_templates_list()
+        self.statusBar().showMessage("模板已删除", 3000)
+
+    def _load_named(self, name: str):
+        from json import loads
+        p = self._templates_dir() / (f"{name}.json" if not name.endswith(".json") else name)
+        if not p.exists():
+            return None, None
+        from dataclasses import asdict
+        data = loads(p.read_text(encoding="utf-8"))
+        from ..core.models import ProjectState, ExportOptions
+        try:
+            return ProjectState(**data["project"]), ExportOptions(**data["export"])  # type: ignore[arg-type]
+        except Exception:
+            return None, None
+
+    def _templates_dir(self):
+        import os
+        from pathlib import Path
+        base = Path(os.getenv("APPDATA", str(Path.home() / "AppData" / "Roaming")))
+        d = base / "PhotoWatermark2" / "templates"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
+
+    def _refresh_templates_list(self) -> None:
+        try:
+            items = list_templates()
+            self.templates_panel.list_label.setText("\n".join(items))
+        except Exception:
+            self.templates_panel.list_label.setText("")
 
     # TODO: connect more advanced text and image controls to state and preview
 

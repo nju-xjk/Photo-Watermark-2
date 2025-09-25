@@ -155,6 +155,32 @@ class ImageWatermarkPanel(QWidget):
             self.choose_btn.setText(path)
             self.changed.emit()
 
+
+class TemplatesPanel(QWidget):
+    saveRequested = Signal(str)
+    loadRequested = Signal(str)
+    deleteRequested = Signal(str)
+
+    def __init__(self) -> None:
+        super().__init__()
+        layout = QVBoxLayout(self)
+        layout.addWidget(QLabel("模板名称"))
+        self.name_edit = QLineEdit()
+        layout.addWidget(self.name_edit)
+        row = QHBoxLayout()
+        self.save_btn = QPushButton("保存模板")
+        self.load_btn = QPushButton("加载模板")
+        self.delete_btn = QPushButton("删除模板")
+        row.addWidget(self.save_btn)
+        row.addWidget(self.load_btn)
+        row.addWidget(self.delete_btn)
+        layout.addLayout(row)
+        self.list_label = QLabel("")
+        layout.addWidget(self.list_label)
+        self.save_btn.clicked.connect(lambda: self.saveRequested.emit(self.name_edit.text()))
+        self.load_btn.clicked.connect(lambda: self.loadRequested.emit(self.name_edit.text()))
+        self.delete_btn.clicked.connect(lambda: self.deleteRequested.emit(self.name_edit.text()))
+
     def _on_grid_clicked(self, idx: int) -> None:
         for i, btn in enumerate(self.grid_buttons):
             btn.setChecked(i == idx)
@@ -187,6 +213,15 @@ class ExportPanel(QWidget):
         self.jpeg_quality.setRange(1, 100)
         self.jpeg_quality.setValue(90)
         layout.addWidget(self.jpeg_quality)
+
+        layout.addWidget(QLabel("尺寸缩放"))
+        self.resize_mode = QComboBox()
+        self.resize_mode.addItems(["none", "width", "height", "percent"])
+        layout.addWidget(self.resize_mode)
+        self.resize_value = QSpinBox()
+        self.resize_value.setRange(1, 10000)
+        self.resize_value.setValue(100)
+        layout.addWidget(self.resize_value)
 
 
 

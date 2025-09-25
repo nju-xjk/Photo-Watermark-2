@@ -58,6 +58,12 @@ class ExportOptions:
     naming_mode: Literal["keep", "prefix", "suffix"] = "suffix"
     naming_value: str = "_watermarked"
     jpeg_quality: int = 90
+    resize_mode: Literal["none", "width", "height", "percent"] = "none"
+    resize_value: int = 100
+
+@dataclass
+class AppSettings:
+    auto_load_last: bool = True
 
 
 

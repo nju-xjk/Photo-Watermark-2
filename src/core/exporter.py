@@ -114,6 +114,22 @@ def _overlay_image_watermark(base: Image.Image, state: ProjectState) -> Image.Im
 
 def export_image(src_path: str, options: ExportOptions, text_cfg: TextWatermarkConfig, state: ProjectState | None = None) -> str:
     img = Image.open(src_path)
+    # optional resizing on load (operate on original)
+    if options.resize_mode != "none":
+        w, h = img.size
+        if options.resize_mode == "width" and options.resize_value > 0:
+            new_w = options.resize_value
+            new_h = int(h * (new_w / w))
+            img = img.resize((new_w, new_h), Image.LANCZOS)
+        elif options.resize_mode == "height" and options.resize_value > 0:
+            new_h = options.resize_value
+            new_w = int(w * (new_h / h))
+            img = img.resize((new_w, new_h), Image.LANCZOS)
+        elif options.resize_mode == "percent" and options.resize_value > 0:
+            scale = options.resize_value / 100.0
+            new_w = max(1, int(w * scale))
+            new_h = max(1, int(h * scale))
+            img = img.resize((new_w, new_h), Image.LANCZOS)
     result = _overlay_text(img, text_cfg)
     if state is not None:
         result = _overlay_image_watermark(result, state)
