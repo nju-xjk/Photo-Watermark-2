@@ -223,7 +223,7 @@ class MainWindow(QMainWindow):
     def _on_font_changed(self) -> None:
         if not hasattr(self, "state"):
             return
-        family = self.text_panel.font_family.text().strip()
+        family = self.text_panel.font_family.text().strip() or "Microsoft YaHei"
         size = self.text_panel.font_size.value()
         self.state.text_wm.font_family = family or None
         self.state.text_wm.font_size = size

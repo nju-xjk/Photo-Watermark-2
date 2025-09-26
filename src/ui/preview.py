@@ -126,7 +126,7 @@ class PreviewWidget(QWidget):
         if self._wm_text:
             painter.setOpacity(self._wm_opacity)
             painter.setPen(self._wm_color)
-            font = QFont(self._wm_font_family, self._wm_font_size)
+            font = QFont(self._wm_font_family or "Microsoft YaHei", self._wm_font_size)
             font.setBold(self._wm_bold)
             font.setItalic(self._wm_italic)
             painter.setFont(font)

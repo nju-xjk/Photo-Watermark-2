@@ -25,16 +25,49 @@ def _overlay_text(img: Image.Image, cfg: TextWatermarkConfig) -> Image.Image:
     draw = ImageDraw.Draw(overlay)
 
     # Basic font; advanced font options will be added later
-    # font selection
+    # font selection with Windows CJK fallbacks
     font: ImageFont.FreeTypeFont | ImageFont.ImageFont
-    ttf_name = cfg.font_family or "segoeui.ttf"
-    try:
-        font = ImageFont.truetype(ttf_name, cfg.font_size)
-    except Exception:
+    def _windows_fonts_dir() -> Path:
+        import os
+        return Path(os.environ.get("WINDIR", "C:/Windows")) / "Fonts"
+
+    def _find_font_file(preferred_family: str | None) -> str | None:
+        fonts_dir = _windows_fonts_dir()
+        candidates: list[str] = []
+        if preferred_family:
+            # try to find a file whose name contains the family name
+            for ext in ("*.ttf", "*.ttc", "*.otf"):
+                for p in fonts_dir.glob(ext):
+                    if preferred_family.lower() in p.name.lower():
+                        candidates.append(str(p))
+        # common CJK-capable fonts
+        candidates.extend([
+            str(fonts_dir / "msyh.ttc"),  # Microsoft YaHei
+            str(fonts_dir / "msyhbd.ttc"),
+            str(fonts_dir / "msyhl.ttc"),
+            str(fonts_dir / "simhei.ttf"),
+            str(fonts_dir / "simsun.ttc"),
+            str(fonts_dir / "msjh.ttc"),
+            str(fonts_dir / "NotoSansCJK-Regular.ttc"),
+            str(fonts_dir / "arial.ttf"),
+            str(fonts_dir / "segoeui.ttf"),
+        ])
+        for c in candidates:
+            try:
+                if Path(c).exists():
+                    return c
+            except Exception:
+                continue
+        return None
+
+    font_path = _find_font_file(cfg.font_family)
+    if font_path:
         try:
-            font = ImageFont.truetype("arial.ttf", cfg.font_size)
+            font = ImageFont.truetype(font_path, cfg.font_size)
         except Exception:
             font = ImageFont.load_default()
+    else:
+        font = ImageFont.load_default()
 
     # compute text bounding box (Pillow 10+)
     stroke_w = cfg.stroke_width if getattr(cfg, "stroke", False) else 0
