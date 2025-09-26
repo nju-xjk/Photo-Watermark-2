@@ -136,6 +136,7 @@ class MainWindow(QMainWindow):
                 return str(Path(p))
         import_dirs = {norm(str(Path(item.path).parent)) for item in self.state.images}
         if norm(out_dir) in import_dirs:
+            QMessageBox.warning(self, "导出目录无效", "输出目录不能与原目录相同")
             self.statusBar().showMessage("输出目录不能与原目录相同", 4000)
             return
 
