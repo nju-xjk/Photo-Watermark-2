@@ -33,6 +33,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Photo Watermark 2")
         self.resize(1200, 800)
+        # ensure state exists early so UI edits persist before importing images
+        from ..core.models import ProjectState as _PS
+        self.state = _PS()
 
         self._init_actions()
         self._init_ui()

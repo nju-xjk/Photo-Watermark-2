@@ -58,17 +58,15 @@ def _overlay_text(img: Image.Image, cfg: TextWatermarkConfig) -> Image.Image:
     text_layer = Image.new("RGBA", (text_w + 8, text_h + 8), (0, 0, 0, 0))
     text_draw = ImageDraw.Draw(text_layer)
 
-    # optional stroke
-    if cfg.stroke:
-        sc = cfg.stroke_color_rgba
-        text_draw.text((4, 4), cfg.content, font=font, fill=sc, stroke_width=cfg.stroke_width, stroke_fill=sc)
-
-    # shadow
+    # draw order: shadow -> stroke -> fill
     if cfg.shadow:
         sh = cfg.shadow_color_rgba
         text_draw.text((6, 6), cfg.content, font=font, fill=sh)
-
-    text_draw.text((4, 4), cfg.content, font=font, fill=fill)
+    if cfg.stroke and cfg.stroke_width > 0:
+        sc = cfg.stroke_color_rgba
+        text_draw.text((4, 4), cfg.content, font=font, fill=fill, stroke_width=cfg.stroke_width, stroke_fill=sc)
+    else:
+        text_draw.text((4, 4), cfg.content, font=font, fill=fill)
     if cfg.rotation:
         text_layer = text_layer.rotate(cfg.rotation, expand=True, resample=Image.BICUBIC)
 
