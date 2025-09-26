@@ -9,11 +9,11 @@ from PIL import Image, ImageDraw, ImageFont
 from .models import ExportOptions, TextWatermarkConfig, ProjectState
 
 
-def _calc_grid_position(img_w: int, img_h: int, text_w: int, text_h: int, slot: int, margin: int = 24) -> Tuple[int, int]:
+def _calc_grid_position(img_w: int, img_h: int, box_w: int, box_h: int, slot: int, margin: int = 24) -> Tuple[int, int]:
     col = slot % 3
     row = slot // 3
-    x = {0: margin, 1: (img_w - text_w) // 2, 2: img_w - text_w - margin}[col]
-    y = {0: margin + text_h, 1: (img_h + text_h) // 2, 2: img_h - margin}[row]
+    x = {0: margin, 1: (img_w - box_w) // 2, 2: img_w - box_w - margin}[col]
+    y = {0: margin, 1: (img_h - box_h) // 2, 2: img_h - box_h - margin}[row]
     return x, y
 
 
@@ -48,7 +48,7 @@ def _overlay_text(img: Image.Image, cfg: TextWatermarkConfig) -> Image.Image:
         cx = int((cfg.rel_x if cfg.rel_x is not None else 0.5) * base.width)
         cy = int((cfg.rel_y if cfg.rel_y is not None else 0.5) * base.height)
         x = cx - text_w // 2
-        y = cy + text_h // 2
+        y = cy - text_h // 2
 
     alpha = max(0, min(100, cfg.opacity))
     r, g, b, a = cfg.color_rgba
@@ -70,7 +70,7 @@ def _overlay_text(img: Image.Image, cfg: TextWatermarkConfig) -> Image.Image:
     if cfg.rotation:
         text_layer = text_layer.rotate(cfg.rotation, expand=True, resample=Image.BICUBIC)
 
-    base_pos = (x - 4, y - text_h - 4)
+    base_pos = (x - 4, y - 4)
     overlay.alpha_composite(text_layer, base_pos)
     return Image.alpha_composite(base, overlay)
 
