@@ -149,7 +149,7 @@ def export_image(src_path: str, options: ExportOptions, text_cfg: TextWatermarkC
         stem = f"{stem}{options.naming_value}"
 
     if options.format == "jpeg":
-        out_path = out_dir / f"{stem}.jpg"
+        out_path = out_dir / f"{stem}.jpeg"
         rgb = result.convert("RGB")
         rgb.save(out_path, format="JPEG", quality=options.jpeg_quality)
     else:
