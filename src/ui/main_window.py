@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QStatusBar,
 )
 from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import QMessageBox
 from pathlib import Path
 
 from ..core.models import ProjectState
@@ -127,8 +128,14 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage("请先导入图片", 3000)
             return
         # 禁止与任一输入目录相同
-        import_dirs = {str(Path(item.path).parent) for item in self.state.images}
-        if out_dir in import_dirs:
+        # 规范化路径后比较，避免大小写/分隔符差异
+        def norm(p: str) -> str:
+            try:
+                return str(Path(p).resolve())
+            except Exception:
+                return str(Path(p))
+        import_dirs = {norm(str(Path(item.path).parent)) for item in self.state.images}
+        if norm(out_dir) in import_dirs:
             self.statusBar().showMessage("输出目录不能与原目录相同", 4000)
             return
 
@@ -144,14 +151,19 @@ class MainWindow(QMainWindow):
 
         count = 0
         errors = 0
+        first_error: Exception | None = None
         for item in self.state.images:
             try:
                 export_image(item.path, options, self.state.text_wm, self.state)
                 count += 1
             except Exception as e:
                 errors += 1
+                if first_error is None:
+                    first_error = e
         if errors:
             self.statusBar().showMessage(f"已导出 {count} 张，失败 {errors} 张（查看日志或权限）", 6000)
+            if first_error is not None:
+                QMessageBox.warning(self, "导出失败", f"示例错误: {first_error}")
         else:
             self.statusBar().showMessage(f"已导出 {count} 张图片到: {out_dir}", 4000)
         try:
