@@ -36,7 +36,11 @@ def _overlay_text(img: Image.Image, cfg: TextWatermarkConfig) -> Image.Image:
         except Exception:
             font = ImageFont.load_default()
 
-    text_w, text_h = draw.textsize(cfg.content, font=font)
+    # compute text bounding box (Pillow 10+)
+    stroke_w = cfg.stroke_width if getattr(cfg, "stroke", False) else 0
+    bbox = draw.textbbox((0, 0), cfg.content, font=font, stroke_width=stroke_w)
+    text_w = bbox[2] - bbox[0]
+    text_h = bbox[3] - bbox[1]
 
     if cfg.position_mode == "grid":
         x, y = _calc_grid_position(base.width, base.height, text_w, text_h, cfg.grid_slot)
