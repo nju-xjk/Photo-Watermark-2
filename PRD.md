@@ -1,68 +1,68 @@
-# Product Requirements Document: Photo Watermark 2
+# 产品需求文档：图片水印工具 2.0
 
-## 1. Introduction
+## 1. 引言
 
-This document outlines the product requirements for the Photo Watermark 2 application, a desktop tool for Windows designed for adding watermarks to images.
+本文档旨在详细说明“图片水印工具 2.0”桌面应用（Windows平台）的产品需求。
 
-## 2. Core Features
+## 2. 核心功能
 
-### 2.1. File Handling
+### 2.1. 文件处理
 
-*   **Image Import:**
-    *   Support single image import via drag-and-drop or a file selector.
-    *   Support batch import of multiple images or an entire folder.
-    *   Display a list of imported images with thumbnails and filenames in the UI.
-*   **Supported Formats:**
-    *   **Input:** Must support JPEG and PNG. PNG must support the alpha channel.
-    *   **Output:** Users can choose to export as JPEG or PNG.
-*   **Image Export:**
-    *   Users must specify an output folder.
-    *   To prevent overwriting original images, exporting to the original folder is disabled by default.
-    *   Provide file naming options:
-        *   Keep original filename.
-        *   Add a custom prefix (e.g., `wm_`).
-        *   Add a custom suffix (e.g., `_watermarked`).
+*   **图片导入**
+    *   支持通过拖拽或文件选择器单张导入图片。
+    *   支持批量导入多张图片或整个文件夹。
+    *   在界面上以缩略图和文件名列表形式显示已导入的图片。
+*   **格式支持**
+    *   **输入格式**：必须支持 JPEG 和 PNG。PNG 格式必须支持透明通道。
+    *   **输出格式**：用户可选择导出为 JPEG 或 PNG。
+*   **图片导出**
+    *   用户必须指定一个输出文件夹。
+    *   为防止覆盖原图，默认禁止导出到原始文件夹。
+    *   提供文件命名规则选项：
+        *   保留原文件名。
+        *   添加自定义前缀（如 `wm_`）。
+        *   添加自定义后缀（如 `_watermarked`）。
 
-### 2.2. Watermark Types
+### 2.2. 水印类型
 
-*   **Text Watermark:**
-    *   **Content:** Users can input any custom text.
-    *   **Transparency:** Adjustable text opacity (0-100%).
+*   **文本水印**
+    *   **内容**：用户可自定义输入任意文本。
+    *   **透明度**：可调节文本的透明度（0-100%）。
 
-### 2.3. Watermark Layout and Style
+### 2.3. 水印布局与样式
 
-*   **Real-time Preview:** All adjustments to the watermark (content, position, transparency, etc.) must be reflected in real-time on a preview window. Users can switch between different imported images to preview the effect.
-*   **Positioning:**
-    *   **Preset Positions:** Provide a 9-grid layout for one-click placement of the watermark (corners, edges, and center).
-    *   **Manual Dragging:** Allow users to drag the watermark to any position on the preview image.
+*   **实时预览**：所有对水印的调整（如内容、位置、透明度等）都应在主预览窗口中实时显示效果。用户可以通过点击图片列表切换预览不同的图片。
+*   **位置**
+    *   **预设位置**：提供九宫格布局（四角、四边中点、正中心），方便用户一键放置水印。
+    *   **手动拖拽**：允许用户在预览图上通过鼠标拖拽水印到任意位置。
 
-### 2.4. Configuration Management
+### 2.4. 配置管理
 
-*   **Watermark Templates:**
-    *   Users can save the current watermark settings (content, position, transparency, etc.) as a template.
-    *   Users can load, manage, and delete saved templates.
-    *   The application can automatically load the last used settings or a default template on startup.
+*   **水印模板**
+    *   用户可将当前的水印设置（包括内容、位置、透明度等所有参数）保存为模板。
+    *   用户可以加载、管理和删除已保存的模板。
+    *   程序启动时可自动加载上一次关闭时的设置或一个默认模板。
 
-## 3. Non-functional Requirements
+## 3. 非功能性需求
 
-*   **Platform:** The application must be a native Windows application.
-*   **Usability:** The user interface should be intuitive and easy to use for non-technical users.
+*   **平台**：应用必须为 Windows 原生桌面应用。
+*   **易用性**：用户界面应设计得直观、简洁，方便非技术用户快速上手。
 
-## 4. Future (Optional) Features
+## 4. 未来（可选）功能规划
 
-The following features are considered for future releases and are not part of the initial scope:
+以下功能为未来版本考虑，不包含在本次开发范围内：
 
-*   **Advanced Input Formats:** Support for BMP, TIFF.
-*   **Advanced Export Options:**
-    *   JPEG quality/compression slider.
-    *   Image resizing (by width, height, or percentage).
-*   **Advanced Text Watermark Options:**
-    *   Font selection (family, size, bold, italic).
-    *   Color picker.
-    *   Shadow or stroke effects.
-*   **Image Watermark:**
-    *   Import an image as a watermark.
-    *   Support for PNGs with transparency.
-    *   Scaling options for the image watermark.
-    *   Opacity control for the image watermark.
-*   **Watermark Rotation:** Ability to rotate the watermark.
+*   **高级输入格式支持**：支持 BMP、TIFF。
+*   **高级导出选项**：
+    *   JPEG 图片质量（压缩率）调节滑块。
+    *   导出时调整图片尺寸（按宽度、高度或百分比缩放）。
+*   **高级文本水印选项**：
+    *   字体选择（字体族、字号、粗体、斜体）。
+    *   颜色选择器。
+    *   添加阴影或描边效果。
+*   **图片水印**：
+    *   支持选择本地图片作为水印。
+    *   支持带透明通道的 PNG 图片。
+    *   图片水印的缩放选项。
+    *   图片水印的透明度调节。
+*   **水印旋转**：允许以任意角度旋转水印。
