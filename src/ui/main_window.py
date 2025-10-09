@@ -14,8 +14,12 @@ class MainWindow:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Photo Watermark 2")
+        self.root.title("Photo Watermark 2.0")
         self.root.geometry("1400x800")
+        self.root.configure(bg='#f0f0f0')
+        
+        # Configure modern styling
+        self.setup_styles()
 
         self.image_processor = ImageProcessor()
         self.config_manager = ConfigManager()
@@ -36,24 +40,110 @@ class MainWindow:
         self.root.drop_target_register(DND_FILES)
         self.root.dnd_bind('<<Drop>>', self.on_drop)
 
+    def setup_styles(self):
+        """Configure modern styling for the application."""
+        # Configure ttk styles
+        style = ttk.Style()
+        
+        # Configure modern button style
+        style.configure('Modern.TButton',
+                       padding=(10, 8),
+                       font=('Segoe UI', 9, 'bold'),
+                       relief='flat',
+                       borderwidth=0)
+        
+        style.map('Modern.TButton',
+                 background=[('active', '#4CAF50'),
+                           ('pressed', '#45a049'),
+                           ('!active', '#5cb85c')],
+                 foreground=[('active', 'white'),
+                           ('pressed', 'white'),
+                           ('!active', 'white')])
+        
+        # Configure primary button style
+        style.configure('Primary.TButton',
+                       padding=(12, 10),
+                       font=('Segoe UI', 10, 'bold'),
+                       relief='flat',
+                       borderwidth=0)
+        
+        style.map('Primary.TButton',
+                 background=[('active', '#2196F3'),
+                           ('pressed', '#1976D2'),
+                           ('!active', '#2196F3')],
+                 foreground=[('active', 'white'),
+                           ('pressed', 'white'),
+                           ('!active', 'white')])
+        
+        # Configure secondary button style
+        style.configure('Secondary.TButton',
+                       padding=(10, 8),
+                       font=('Segoe UI', 9),
+                       relief='flat',
+                       borderwidth=1)
+        
+        style.map('Secondary.TButton',
+                 background=[('active', '#f8f9fa'),
+                           ('pressed', '#e9ecef'),
+                           ('!active', 'white')],
+                 foreground=[('active', '#495057'),
+                           ('pressed', '#495057'),
+                           ('!active', '#495057')],
+                 bordercolor=[('active', '#dee2e6'),
+                            ('pressed', '#adb5bd'),
+                            ('!active', '#dee2e6')])
+        
+        # Configure modern frame style
+        style.configure('Card.TFrame',
+                       background='white',
+                       relief='solid',
+                       borderwidth=1)
+        
+        # Configure modern label frame
+        style.configure('Modern.TLabelframe',
+                       background='white',
+                       relief='solid',
+                       borderwidth=1)
+        
+        style.configure('Modern.TLabelframe.Label',
+                       background='white',
+                       foreground='#495057',
+                       font=('Segoe UI', 10, 'bold'))
+
     def create_widgets(self):
         """Creates the widgets for the main window."""
-        main_frame = tk.Frame(self.root)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        main_frame = tk.Frame(self.root, bg='#f0f0f0')
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
         # Left panel for thumbnails
-        left_panel = tk.Frame(main_frame, width=250)
-        left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=5, pady=5)
+        left_panel = ttk.Frame(main_frame, style='Card.TFrame', width=280)
+        left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
         left_panel.pack_propagate(False)
 
-        self.import_button = tk.Button(left_panel, text="Import Images", command=self.import_images)
-        self.import_button.pack(pady=5, fill=tk.X)
+        # Import section
+        import_frame = ttk.Frame(left_panel)
+        import_frame.pack(fill=tk.X, padx=15, pady=15)
 
-        self.import_folder_button = tk.Button(left_panel, text="Import Folder", command=self.import_folder)
-        self.import_folder_button.pack(pady=5, fill=tk.X)
+        ttk.Label(import_frame, text="📁 Import Images", font=('Segoe UI', 12, 'bold')).pack(anchor='w', pady=(0, 10))
 
-        canvas = tk.Canvas(left_panel)
-        scrollbar = ttk.Scrollbar(left_panel, orient="vertical", command=canvas.yview)
+        self.import_button = ttk.Button(import_frame, text="📷 Select Images", command=self.import_images, style='Primary.TButton')
+        self.import_button.pack(fill=tk.X, pady=(0, 8))
+
+        self.import_folder_button = ttk.Button(import_frame, text="📂 Select Folder", command=self.import_folder, style='Secondary.TButton')
+        self.import_folder_button.pack(fill=tk.X, pady=(0, 10))
+
+        # Separator
+        ttk.Separator(import_frame, orient='horizontal').pack(fill=tk.X, pady=10)
+
+        # Thumbnails section
+        ttk.Label(import_frame, text="🖼️ Image List", font=('Segoe UI', 12, 'bold')).pack(anchor='w', pady=(0, 10))
+
+        # Thumbnails scrollable area
+        thumbnails_frame = ttk.Frame(left_panel)
+        thumbnails_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
+        
+        canvas = tk.Canvas(thumbnails_frame, bg='white', highlightthickness=0)
+        scrollbar = ttk.Scrollbar(thumbnails_frame, orient="vertical", command=canvas.yview)
         self.scrollable_frame = ttk.Frame(canvas)
         self.scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
@@ -62,18 +152,27 @@ class MainWindow:
         scrollbar.pack(side="right", fill="y")
 
         # Center panel for the main image view
-        self.center_panel = tk.Frame(main_frame)
-        self.center_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=5, pady=5)
+        self.center_panel = ttk.Frame(main_frame, style='Card.TFrame')
+        self.center_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
 
-        self.image_label = tk.Label(self.center_panel, text="Workspace - Select an image to view")
+        # Image display area
+        image_display_frame = ttk.Frame(self.center_panel)
+        image_display_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        self.image_label = tk.Label(image_display_frame, 
+                                   text="🎨 Workspace\n\nDrag & drop images here or use the import buttons\n\nSelect an image from the list to start editing", 
+                                   font=('Segoe UI', 12),
+                                   fg='#6c757d',
+                                   bg='white',
+                                   justify='center')
         self.image_label.pack(fill=tk.BOTH, expand=True)
         self.image_label.bind("<Button-1>", self.on_drag_start)
         self.image_label.bind("<B1-Motion>", self.on_drag_motion)
         self.image_label.bind("<ButtonRelease-1>", self.on_drag_end)
 
         # Right panel for controls
-        self.control_panel = tk.Frame(main_frame, width=300)
-        self.control_panel.pack(side=tk.RIGHT, fill=tk.Y, padx=5, pady=5)
+        self.control_panel = ttk.Frame(main_frame, style='Card.TFrame', width=320)
+        self.control_panel.pack(side=tk.RIGHT, fill=tk.Y)
         self.control_panel.pack_propagate(False)
 
         self.create_template_controls()
@@ -82,53 +181,84 @@ class MainWindow:
 
     def create_template_controls(self):
         """Creates the widgets for saving and loading templates."""
-        template_frame = ttk.LabelFrame(self.control_panel, text="Watermark Templates")
-        template_frame.pack(fill=tk.X, pady=(10, 0))
+        template_frame = ttk.LabelFrame(self.control_panel, text="💾 Watermark Templates", style='Modern.TLabelframe')
+        template_frame.pack(fill=tk.X, padx=15, pady=(15, 10))
 
-        save_button = tk.Button(template_frame, text="Save Template", command=self.save_template)
-        save_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=5, pady=5)
+        button_frame = ttk.Frame(template_frame)
+        button_frame.pack(fill=tk.X, padx=10, pady=10)
 
-        load_button = tk.Button(template_frame, text="Load Template", command=self.load_template)
-        load_button.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=5, pady=5)
+        save_button = ttk.Button(button_frame, text="💾 Save Template", command=self.save_template, style='Secondary.TButton')
+        save_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
+
+        load_button = ttk.Button(button_frame, text="📂 Load Template", command=self.load_template, style='Secondary.TButton')
+        load_button.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
 
     def create_watermark_controls(self):
         """Creates the widgets for the watermark control panel."""
-        watermark_frame = ttk.LabelFrame(self.control_panel, text="Watermark Settings")
-        watermark_frame.pack(fill=tk.X, pady=10)
+        watermark_frame = ttk.LabelFrame(self.control_panel, text="🎨 Watermark Settings", style='Modern.TLabelframe')
+        watermark_frame.pack(fill=tk.X, padx=15, pady=10)
 
-        ttk.Label(watermark_frame, text="Watermark Text:").pack(anchor="w", pady=(5, 2), padx=5)
+        # Text input
+        text_frame = ttk.Frame(watermark_frame)
+        text_frame.pack(fill=tk.X, padx=10, pady=(10, 5))
+        
+        ttk.Label(text_frame, text="📝 Watermark Text:", font=('Segoe UI', 9, 'bold')).pack(anchor="w")
         self.watermark_text = tk.StringVar(value="Your Watermark")
         self.watermark_text.trace_add("write", self.schedule_preview)
-        ttk.Entry(watermark_frame, textvariable=self.watermark_text).pack(fill=tk.X, padx=5)
+        text_entry = ttk.Entry(text_frame, textvariable=self.watermark_text, font=('Segoe UI', 10))
+        text_entry.pack(fill=tk.X, pady=(5, 0))
 
-        ttk.Label(watermark_frame, text="Font Size:").pack(anchor="w", pady=(10, 2), padx=5)
+        # Font size
+        size_frame = ttk.Frame(watermark_frame)
+        size_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        ttk.Label(size_frame, text="📏 Font Size:", font=('Segoe UI', 9, 'bold')).pack(anchor="w")
         self.font_size = tk.IntVar(value=40)
         self.font_size.trace_add("write", self.schedule_preview)
-        ttk.Spinbox(watermark_frame, from_=1, to=500, textvariable=self.font_size).pack(fill=tk.X, padx=5)
+        size_spinbox = ttk.Spinbox(size_frame, from_=1, to=500, textvariable=self.font_size, font=('Segoe UI', 10))
+        size_spinbox.pack(fill=tk.X, pady=(5, 0))
 
-        ttk.Label(watermark_frame, text="Opacity (0-255):").pack(anchor="w", pady=(10, 2), padx=5)
+        # Opacity
+        opacity_frame = ttk.Frame(watermark_frame)
+        opacity_frame.pack(fill=tk.X, padx=10, pady=5)
+        
+        ttk.Label(opacity_frame, text="👁️ Opacity (0-255):", font=('Segoe UI', 9, 'bold')).pack(anchor="w")
         self.opacity = tk.IntVar(value=128)
-        ttk.Scale(watermark_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.opacity, command=self.schedule_preview).pack(fill=tk.X, padx=5)
+        opacity_scale = ttk.Scale(opacity_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.opacity, command=self.schedule_preview)
+        opacity_scale.pack(fill=tk.X, pady=(5, 0))
 
-        self.color_button = tk.Button(watermark_frame, text="Choose Color", command=self.choose_color_and_preview)
-        self.color_button.pack(pady=10, fill=tk.X, padx=5)
+        # Color button
+        color_frame = ttk.Frame(watermark_frame)
+        color_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        self.color_button = ttk.Button(color_frame, text="🎨 Choose Color", command=self.choose_color_and_preview, style='Secondary.TButton')
+        self.color_button.pack(fill=tk.X)
         self.watermark_color = (255, 255, 255)
 
-        ttk.Label(watermark_frame, text="Position:").pack(anchor="w", pady=(10, 5), padx=5)
+        # Position controls
         position_frame = ttk.Frame(watermark_frame)
-        position_frame.pack(fill=tk.X, padx=5)
+        position_frame.pack(fill=tk.X, padx=10, pady=10)
+        
+        ttk.Label(position_frame, text="📍 Position:", font=('Segoe UI', 9, 'bold')).pack(anchor="w", pady=(0, 5))
+        
+        pos_grid_frame = ttk.Frame(position_frame)
+        pos_grid_frame.pack(fill=tk.X)
+        
         positions = ["top-left", "top-center", "top-right",
                      "mid-left", "mid-center", "mid-right",
                      "bottom-left", "bottom-center", "bottom-right"]
+        
         for i, pos in enumerate(positions):
-            btn = tk.Button(position_frame, text=pos.replace("-", "\n"), 
+            btn = ttk.Button(pos_grid_frame, text=pos.replace("-", "\n"), 
                           command=lambda p=pos: self.set_watermark_position(p), 
-                          width=10, height=3)
-            btn.grid(row=i//3, column=i%3, sticky="nsew")
-            position_frame.grid_columnconfigure(i%3, weight=1)
-        position_frame.grid_rowconfigure(0, weight=1)
-        position_frame.grid_rowconfigure(1, weight=1)
-        position_frame.grid_rowconfigure(2, weight=1)
+                          style='Secondary.TButton',
+                          width=8)
+            btn.grid(row=i//3, column=i%3, sticky="nsew", padx=2, pady=2)
+            pos_grid_frame.grid_columnconfigure(i%3, weight=1)
+        
+        pos_grid_frame.grid_rowconfigure(0, weight=1)
+        pos_grid_frame.grid_rowconfigure(1, weight=1)
+        pos_grid_frame.grid_rowconfigure(2, weight=1)
 
     def create_export_controls(self):
         """Creates the widgets for the export control panel."""
@@ -302,13 +432,19 @@ class MainWindow:
                 thumbnail = self.image_processor.create_thumbnail(img.copy(), (100, 100))
                 tk_thumb = ImageTk.PhotoImage(thumbnail)
                 self.tk_thumbnails.append(tk_thumb)
-                thumb_frame = tk.Frame(self.scrollable_frame)
-                thumb_frame.pack(fill=tk.X, pady=5, padx=5)
-                label = tk.Label(thumb_frame, image=tk_thumb)
-                label.pack(side=tk.LEFT)
+                thumb_frame = ttk.Frame(self.scrollable_frame, style='Card.TFrame')
+                thumb_frame.pack(fill=tk.X, pady=3, padx=5)
+                
+                # Thumbnail image
+                label = tk.Label(thumb_frame, image=tk_thumb, bg='white', relief='solid', borderwidth=1)
+                label.pack(side=tk.LEFT, padx=8, pady=8)
                 label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
-                filename_label = tk.Label(thumb_frame, text=os.path.basename(path), wraplength=120)
-                filename_label.pack(side=tk.LEFT, padx=5)
+                
+                # Filename
+                filename_label = tk.Label(thumb_frame, text=os.path.basename(path), 
+                                        wraplength=120, font=('Segoe UI', 9), 
+                                        bg='white', fg='#495057', justify='left')
+                filename_label.pack(side=tk.LEFT, padx=(0, 8), pady=8, fill=tk.BOTH, expand=True)
                 filename_label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
             except Exception as e:
                 print(f"Error processing {path}: {e}")
