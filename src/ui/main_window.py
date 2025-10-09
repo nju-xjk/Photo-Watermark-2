@@ -30,6 +30,9 @@ class MainWindow:
 
         self.create_widgets()
 
+        self.root.drop_target_register('DND_FILES')
+        self.root.dnd_bind('<<Drop>>', self.on_drop)
+
     def create_widgets(self):
         """Creates the widgets for the main window."""
         main_frame = tk.Frame(self.root)
@@ -42,6 +45,9 @@ class MainWindow:
 
         self.import_button = tk.Button(left_panel, text="Import Images", command=self.import_images)
         self.import_button.pack(pady=5, fill=tk.X)
+
+        self.import_folder_button = tk.Button(left_panel, text="Import Folder", command=self.import_folder)
+        self.import_folder_button.pack(pady=5, fill=tk.X)
 
         canvas = tk.Canvas(left_panel)
         scrollbar = ttk.Scrollbar(left_panel, orient="vertical", command=canvas.yview)
@@ -261,13 +267,25 @@ class MainWindow:
             self.root.after_cancel(self.preview_job)
         self.preview_job = self.root.after(50, self.preview_watermark) # Short delay for responsiveness
 
-    def import_images(self):
-        """Opens a file dialog to import images."""
-        filetypes = (('Image files', '*.jpg *.jpeg *.png *.bmp *.tiff'), ('All files', '*.*'))
-        filepaths = filedialog.askopenfilenames(title='Select one or more images', filetypes=filetypes)
+    def import_images(self, filepaths=None):
+        """Opens a file dialog to import images or accepts a list of filepaths."""
+        if not filepaths:
+            filetypes = (('Image files', '*.jpg *.jpeg *.png *.bmp *.tiff'), ('All files', '*.*'))
+            filepaths = filedialog.askopenfilenames(title='Select one or more images', filetypes=filetypes)
+        
         if filepaths:
             self.filepaths.extend(filepaths)
             self.update_thumbnail_list()
+
+    def import_folder(self):
+        """Opens a dialog to select a folder and imports all valid images from it."""
+        folder_path = filedialog.askdirectory(title='Select a folder')
+        if folder_path:
+            filepaths = []
+            for filename in os.listdir(folder_path):
+                if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
+                    filepaths.append(os.path.join(folder_path, filename))
+            self.import_images(filepaths)
 
     def update_thumbnail_list(self):
         """Updates the list of thumbnails."""
@@ -333,3 +351,16 @@ class MainWindow:
     def run(self):
         """Runs the application loop."""
         self.root.mainloop()
+
+    def on_drop(self, event):
+        """Handles files dropped onto the window."""
+        filepaths = self.root.tk.splitlist(event.data)
+        valid_filepaths = []
+        for path in filepaths:
+            if os.path.isdir(path):
+                for filename in os.listdir(path):
+                    if filename.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
+                        valid_filepaths.append(os.path.join(path, filename))
+            elif os.path.isfile(path) and path.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
+                valid_filepaths.append(path)
+        self.import_images(valid_filepaths)

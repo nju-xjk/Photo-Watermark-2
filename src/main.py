@@ -1,9 +1,10 @@
 import tkinter as tk
+from tkinterdnd2 import TkinterDnD
 from ui.main_window import MainWindow
 
 def main():
     """Main function to run the application."""
-    root = tk.Tk()
+    root = TkinterDnD.Tk()
     main_window = MainWindow(root)
     main_window.run()
 
