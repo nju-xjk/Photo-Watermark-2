@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import filedialog, ttk, colorchooser
+from tkinterdnd2 import DND_FILES
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import os
 import json
@@ -32,7 +33,7 @@ class MainWindow:
 
         self.create_widgets()
 
-        self.root.drop_target_register('DND_FILES')
+        self.root.drop_target_register(DND_FILES)
         self.root.dnd_bind('<<Drop>>', self.on_drop)
 
     def create_widgets(self):
