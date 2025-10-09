@@ -117,13 +117,7 @@ class ImageProcessor:
             except Exception:
                 pass
 
-        # 2) Try common Western font
-        try:
-            return ImageFont.truetype("arial.ttf", watermark.font_size)
-        except Exception:
-            pass
-
-        # 3) Try common CJK fonts on Windows
+        # 2) Try common CJK fonts on Windows first (to avoid garbled Chinese)
         windows_fonts_dir = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts')
         cjk_candidates = [
             'msyh.ttc',            # Microsoft YaHei (collection)
@@ -145,6 +139,12 @@ class ImageProcessor:
                     return ImageFont.truetype(candidate_path, watermark.font_size)
             except Exception:
                 continue
+
+        # 3) Try common Western font
+        try:
+            return ImageFont.truetype("arial.ttf", watermark.font_size)
+        except Exception:
+            pass
 
         # 4) Final fallback – PIL default (may not support all glyphs)
         print("Warning: No CJK-capable font found. Falling back to PIL default font; Chinese characters may not render correctly.")
