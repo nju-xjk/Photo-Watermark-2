@@ -28,6 +28,7 @@ class MainWindow:
         self.is_dragging = False
         self.drag_start_pos = {"x": 0, "y": 0}
         self.display_to_original_ratio = 1.0
+        self.image_states = {}
 
         self.create_widgets()
 
@@ -313,8 +314,9 @@ class MainWindow:
 
     def on_image_select(self, path):
         """Handles image selection."""
+        self.save_current_image_state() # Save state of the previous image
         self.current_image_path = path
-        self.watermark_offset = {"x": 0, "y": 0} # Reset on new image
+        self.load_image_state(path) # Load state for the new image
         try:
             self.original_image = self.image_processor.load_image(path)
             if self.original_image is None: return
@@ -339,6 +341,8 @@ class MainWindow:
         if not self.original_image:
             return
 
+        self.save_current_image_state()
+
         position_tuple = (self.watermark_position_mode, self.watermark_offset)
 
         watermark = Watermark(
@@ -354,6 +358,39 @@ class MainWindow:
     def run(self):
         """Runs the application loop."""
         self.root.mainloop()
+
+    def save_current_image_state(self):
+        """Saves the watermark state for the current image."""
+        if self.current_image_path:
+            self.image_states[self.current_image_path] = {
+                "text": self.watermark_text.get(),
+                "font_size": self.font_size.get(),
+                "opacity": self.opacity.get(),
+                "color": self.watermark_color,
+                "position_mode": self.watermark_position_mode,
+                "offset_x": self.watermark_offset["x"],
+                "offset_y": self.watermark_offset["y"],
+            }
+
+    def load_image_state(self, image_path):
+        """Loads the watermark state for the given image path."""
+        state = self.image_states.get(image_path)
+        if state:
+            self.watermark_text.set(state.get("text", ""))
+            self.font_size.set(state.get("font_size", 40))
+            self.opacity.set(state.get("opacity", 128))
+            self.watermark_color = tuple(state.get("color", (255, 255, 255)))
+            self.watermark_position_mode = state.get("position_mode", "bottom-right")
+            self.watermark_offset["x"] = state.get("offset_x", 0)
+            self.watermark_offset["y"] = state.get("offset_y", 0)
+        else:
+            # Reset to default if no state is found
+            self.watermark_text.set("Your Watermark")
+            self.font_size.set(40)
+            self.opacity.set(128)
+            self.watermark_color = (255, 255, 255)
+            self.watermark_position_mode = "bottom-right"
+            self.watermark_offset = {"x": 0, "y": 0}
 
     def on_drop(self, event):
         """Handles files dropped onto the window."""
