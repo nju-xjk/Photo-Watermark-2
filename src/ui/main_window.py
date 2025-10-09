@@ -27,6 +27,7 @@ class MainWindow:
         self.watermark_offset = {"x": 0, "y": 0}
         self.is_dragging = False
         self.drag_start_pos = {"x": 0, "y": 0}
+        self.display_to_original_ratio = 1.0
 
         self.create_widgets()
 
@@ -236,8 +237,8 @@ class MainWindow:
     def on_drag_motion(self, event):
         """Handles the dragging motion."""
         if self.is_dragging:
-            dx = event.x - self.drag_start_pos["x"]
-            dy = event.y - self.drag_start_pos["y"]
+            dx = (event.x - self.drag_start_pos["x"]) / self.display_to_original_ratio
+            dy = (event.y - self.drag_start_pos["y"]) / self.display_to_original_ratio
             self.watermark_offset["x"] += dx
             self.watermark_offset["y"] += dy
             self.drag_start_pos["x"] = event.x
@@ -325,8 +326,10 @@ class MainWindow:
         """Displays an image in the main workspace."""
         workspace_size = (self.center_panel.winfo_width(), self.center_panel.winfo_height())
         if workspace_size[0] > 1 and workspace_size[1] > 1:
+            self.display_to_original_ratio = min(workspace_size[0] / self.original_image.width, workspace_size[1] / self.original_image.height)
             display_img = self.image_processor.resize_to_fit(img, workspace_size)
         else:
+            self.display_to_original_ratio = 1.0
             display_img = img
         self.main_photo_image = ImageTk.PhotoImage(display_img)
         self.image_label.config(image=self.main_photo_image, text="")
