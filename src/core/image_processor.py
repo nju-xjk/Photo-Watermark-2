@@ -1,4 +1,5 @@
 from PIL import Image, ImageDraw, ImageFont
+import os
 
 class ImageProcessor:
     """Handles image loading, processing, and saving."""
@@ -47,14 +48,7 @@ class ImageProcessor:
         txt_layer = Image.new('RGBA', image.size, (255, 255, 255, 0))
         draw = ImageDraw.Draw(txt_layer)
         
-        try:
-            font = ImageFont.truetype(watermark.font_path, watermark.font_size)
-        except (IOError, FileNotFoundError, AttributeError):
-            try:
-                font = ImageFont.truetype("arial.ttf", watermark.font_size)
-            except (IOError, FileNotFoundError):
-                print("Arial font not found. Using default font.")
-                font = ImageFont.load_default()
+        font = self._load_font_with_fallbacks(watermark)
 
         text_bbox = draw.textbbox((0, 0), watermark.text, font=font)
         text_width = text_bbox[2] - text_bbox[0]
@@ -112,3 +106,46 @@ class ImageProcessor:
                 img_to_save.save(path, format=format)
         except Exception as e:
             print(f"Error saving image {path}: {e}")
+
+    def _load_font_with_fallbacks(self, watermark):
+        """Loads a truetype font with sensible fallbacks that support CJK (Chinese) characters on Windows."""
+        # 1) Explicit path on the watermark, if provided and exists
+        if getattr(watermark, 'font_path', None):
+            try:
+                if watermark.font_path and os.path.exists(watermark.font_path):
+                    return ImageFont.truetype(watermark.font_path, watermark.font_size)
+            except Exception:
+                pass
+
+        # 2) Try common Western font
+        try:
+            return ImageFont.truetype("arial.ttf", watermark.font_size)
+        except Exception:
+            pass
+
+        # 3) Try common CJK fonts on Windows
+        windows_fonts_dir = os.path.join(os.environ.get('WINDIR', r'C:\Windows'), 'Fonts')
+        cjk_candidates = [
+            'msyh.ttc',            # Microsoft YaHei (collection)
+            'MSYH.TTC',
+            'msyh.ttf',            # Sometimes shipped as ttf
+            'MicrosoftYaHei.ttf',
+            'simhei.ttf',          # SimHei
+            'SIMHEI.TTF',
+            'simsun.ttc',          # SimSun (collection)
+            'SIMSUN.TTC',
+            'Deng.ttf',            # DengXian
+            'DENG.TTF',
+            'NotoSansCJK-Regular.ttc', # Noto CJK
+        ]
+        for fname in cjk_candidates:
+            candidate_path = os.path.join(windows_fonts_dir, fname)
+            try:
+                if os.path.exists(candidate_path):
+                    return ImageFont.truetype(candidate_path, watermark.font_size)
+            except Exception:
+                continue
+
+        # 4) Final fallback – PIL default (may not support all glyphs)
+        print("Warning: No CJK-capable font found. Falling back to PIL default font; Chinese characters may not render correctly.")
+        return ImageFont.load_default()
