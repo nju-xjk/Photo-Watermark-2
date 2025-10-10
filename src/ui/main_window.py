@@ -124,7 +124,7 @@ class MainWindow:
         toolbar = ttk.Frame(main_frame, style='Card.TFrame')
         toolbar.pack(side=tk.TOP, fill=tk.X, pady=(0, 10))
 
-        self.import_button = ttk.Button(toolbar, text="📷 Select Images", command=self.import_images, style='Primary.TButton')
+        self.import_button = ttk.Button(toolbar, text="📷 Select Images", command=self.import_images, style='Secondary.TButton')
         self.import_button.pack(side=tk.LEFT, padx=(10, 5), pady=10)
 
         self.import_folder_button = ttk.Button(toolbar, text="📂 Select Folder", command=self.import_folder, style='Secondary.TButton')
