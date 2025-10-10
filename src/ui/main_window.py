@@ -349,7 +349,16 @@ class MainWindow:
             if settings:
                 self.watermark_text.set(settings.get("text", ""))
                 self.font_size.set(settings.get("font_size", 40))
-                self.opacity.set(settings.get("opacity", 128))
+                # migrate opacity from 0-255 to 0-100 if needed
+                opacity_val = settings.get("opacity", 50)
+                if isinstance(opacity_val, (int, float)):
+                    if opacity_val > 100:
+                        opacity_percent = max(0, min(100, int(round(opacity_val * 100 / 255))))
+                    else:
+                        opacity_percent = max(0, min(100, int(opacity_val)))
+                    self.opacity.set(opacity_percent)
+                else:
+                    self.opacity.set(50)
                 self.watermark_color = tuple(settings.get("color", (255, 255, 255)))
                 self.watermark_position_mode = settings.get("position_mode", "bottom-right")
                 self.watermark_offset["x"] = settings.get("offset_x", 0)
@@ -367,6 +376,7 @@ class MainWindow:
         if not output_dir:
             return
 
+        # Build watermark using current settings (opacity percent -> alpha 0-255)
         alpha = int(max(0, min(100, self.opacity.get())) * 255 / 100)
         watermark = Watermark(
             text=self.watermark_text.get(),
@@ -387,12 +397,14 @@ class MainWindow:
                 rule = self.naming_rule.get() if hasattr(self, 'naming_rule') else 'original'
                 prefix = self.export_prefix.get() if hasattr(self, 'export_prefix') else ''
                 suffix = self.export_suffix.get() if hasattr(self, 'export_suffix') else ''
+                fmt = (self.export_format.get() if hasattr(self, 'export_format') else 'JPEG').upper()
+                output_ext = '.jpg' if fmt == 'JPEG' else '.png'
                 if rule == 'prefix':
-                    new_name = f"{prefix}{name}{ext}"
+                    new_name = f"{prefix}{name}{output_ext}"
                 elif rule == 'suffix':
-                    new_name = f"{name}{suffix}{ext}"
+                    new_name = f"{name}{suffix}{output_ext}"
                 else:
-                    new_name = base_filename
+                    new_name = f"{name}{output_ext}"
                 new_filename = new_name
                 output_path = os.path.join(output_dir, new_filename)
 
@@ -473,8 +485,8 @@ class MainWindow:
             text_height = text_bbox[3] - text_bbox[1]
             
             actual_pos = self.image_processor.calculate_position(
-                self.original_image.size, 
-                (text_width, text_height), 
+                self.original_image.size,
+                (text_width, text_height),
                 (current_mode, current_offset)
             )
             
@@ -629,10 +641,11 @@ class MainWindow:
 
         position_tuple = (self.watermark_position_mode, self.watermark_offset)
 
+        alpha = int(max(0, min(100, self.opacity.get())) * 255 / 100)
         watermark = Watermark(
             text=self.watermark_text.get(),
             font_size=self.font_size.get(),
-            color=self.watermark_color + (self.opacity.get(),),
+            color=self.watermark_color + (alpha,),
             position=position_tuple
         )
 
@@ -662,7 +675,16 @@ class MainWindow:
         if state:
             self.watermark_text.set(state.get("text", ""))
             self.font_size.set(state.get("font_size", 40))
-            self.opacity.set(state.get("opacity", 128))
+            # migrate opacity from 0-255 to 0-100 if needed
+            opacity_val = state.get("opacity", 50)
+            if isinstance(opacity_val, (int, float)):
+                if opacity_val > 100:
+                    opacity_percent = max(0, min(100, int(round(opacity_val * 100 / 255))))
+                else:
+                    opacity_percent = max(0, min(100, int(opacity_val)))
+                self.opacity.set(opacity_percent)
+            else:
+                self.opacity.set(50)
             self.watermark_color = tuple(state.get("color", (255, 255, 255)))
             self.watermark_position_mode = state.get("position_mode", "bottom-right")
             self.watermark_offset["x"] = state.get("offset_x", 0)
@@ -671,7 +693,7 @@ class MainWindow:
             # Reset to default if no state is found
             self.watermark_text.set("Your Watermark")
             self.font_size.set(40)
-            self.opacity.set(128)
+            self.opacity.set(50)
             self.watermark_color = (255, 255, 255)
             self.watermark_position_mode = "bottom-right"
             self.watermark_offset = {"x": 0, "y": 0}
