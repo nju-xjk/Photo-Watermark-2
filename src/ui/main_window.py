@@ -136,8 +136,8 @@ class MainWindow:
         self.export_single_button = ttk.Button(toolbar, text="🖼️ Export Single", command=self.export_single_image, style='Secondary.TButton')
         self.export_single_button.pack(side=tk.LEFT, padx=5, pady=10)
 
-        # Left panel for thumbnails (wider to show longer filenames)
-        left_panel = ttk.Frame(main_frame, style='Card.TFrame', width=340)
+        # Left panel for thumbnails (balanced width; filenames will wrap)
+        left_panel = ttk.Frame(main_frame, style='Card.TFrame', width=300)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
         left_panel.pack_propagate(False)
 
@@ -286,11 +286,14 @@ class MainWindow:
         self.naming_rule = tk.StringVar(value="original")  # original | prefix | suffix
 
         rule_row = ttk.Frame(inner)
-        rule_row.pack(fill=tk.X, pady=(5, 8))
+        rule_row.pack(fill=tk.X, pady=(5, 2))
 
         ttk.Radiobutton(rule_row, text="Keep original", value="original", variable=self.naming_rule).pack(side=tk.LEFT)
         ttk.Radiobutton(rule_row, text="Add prefix", value="prefix", variable=self.naming_rule).pack(side=tk.LEFT, padx=(10,0))
-        ttk.Radiobutton(rule_row, text="Add suffix", value="suffix", variable=self.naming_rule).pack(side=tk.LEFT, padx=(10,0))
+
+        rule_row2 = ttk.Frame(inner)
+        rule_row2.pack(fill=tk.X, pady=(0, 8))
+        ttk.Radiobutton(rule_row2, text="Add suffix", value="suffix", variable=self.naming_rule).pack(side=tk.LEFT)
 
         # Prefix / Suffix inputs
         ps_row = ttk.Frame(inner)
@@ -528,13 +531,13 @@ class MainWindow:
                 label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
                 img_container.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
 
-                # Fixed-size text container and label (uniform text area, wider)
-                text_container = tk.Frame(thumb_frame, width=200, height=110, bg='white')
+                # Fixed-size text container; ensure wrap within available width
+                text_container = tk.Frame(thumb_frame, width=160, height=110, bg='white')
                 text_container.pack(side=tk.LEFT, padx=(0, 8), pady=8)
                 text_container.pack_propagate(False)
 
                 filename_label = tk.Label(text_container, text=os.path.basename(path), 
-                                        wraplength=190, font=('Segoe UI', 9), 
+                                        wraplength=150, font=('Segoe UI', 9), 
                                         bg='white', fg='#212529', justify='left', anchor='nw')
                 filename_label.pack(fill=tk.BOTH, expand=True)
                 filename_label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
