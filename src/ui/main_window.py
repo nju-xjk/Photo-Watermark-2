@@ -171,7 +171,8 @@ class MainWindow:
                                    fg='#212529',
                                    bg='white',
                                    justify='center')
-        self.image_label.pack(fill=tk.BOTH, expand=True)
+        # Center the placeholder/image within the fixed preview area
+        self.image_label.place(relx=0.5, rely=0.5, anchor='center')
         self.image_label.bind("<Button-1>", self.on_drag_start)
         self.image_label.bind("<B1-Motion>", self.on_drag_motion)
         self.image_label.bind("<ButtonRelease-1>", self.on_drag_end)
@@ -223,13 +224,13 @@ class MainWindow:
         size_spinbox = ttk.Spinbox(size_frame, from_=1, to=500, textvariable=self.font_size, font=('Segoe UI', 10))
         size_spinbox.pack(fill=tk.X, pady=(5, 0))
 
-        # Opacity
+        # Opacity (percent 0-100)
         opacity_frame = ttk.Frame(watermark_frame)
         opacity_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        ttk.Label(opacity_frame, text="👁️ Opacity (0-255):", font=('Segoe UI', 9, 'bold')).pack(anchor="w")
-        self.opacity = tk.IntVar(value=128)
-        opacity_scale = ttk.Scale(opacity_frame, from_=0, to=255, orient=tk.HORIZONTAL, variable=self.opacity, command=self.schedule_preview)
+        ttk.Label(opacity_frame, text="👁️ Opacity (0% - 100%):", font=('Segoe UI', 9, 'bold')).pack(anchor="w")
+        self.opacity = tk.IntVar(value=50)
+        opacity_scale = ttk.Scale(opacity_frame, from_=0, to=100, orient=tk.HORIZONTAL, variable=self.opacity, command=self.schedule_preview)
         opacity_scale.pack(fill=tk.X, pady=(5, 0))
 
         # Color button
@@ -315,10 +316,11 @@ class MainWindow:
         if not output_dir:
             return
 
+        alpha = int(max(0, min(100, self.opacity.get())) * 255 / 100)
         watermark = Watermark(
             text=self.watermark_text.get(),
             font_size=self.font_size.get(),
-            color=self.watermark_color + (self.opacity.get(),),
+            color=self.watermark_color + (alpha,),
             position=(self.watermark_position_mode, self.watermark_offset)
         )
 
@@ -358,10 +360,11 @@ class MainWindow:
         if not output_path:
             return
 
+        alpha = int(max(0, min(100, self.opacity.get())) * 255 / 100)
         watermark = Watermark(
             text=self.watermark_text.get(),
             font_size=self.font_size.get(),
-            color=self.watermark_color + (self.opacity.get(),),
+            color=self.watermark_color + (alpha,),
             position=(self.watermark_position_mode, self.watermark_offset)
         )
 
@@ -457,17 +460,27 @@ class MainWindow:
                 thumb_frame = ttk.Frame(self.scrollable_frame, style='Card.TFrame')
                 thumb_frame.pack(fill=tk.X, pady=3, padx=5)
                 
-                # Thumbnail image
-                label = tk.Label(thumb_frame, image=tk_thumb, bg='white', relief='solid', borderwidth=1)
-                label.pack(side=tk.LEFT, padx=8, pady=8)
+                # Fixed-size image container and label (uniform thumbnail area)
+                img_container = tk.Frame(thumb_frame, width=110, height=110, bg='white', relief='solid', borderwidth=1)
+                img_container.pack(side=tk.LEFT, padx=8, pady=8)
+                img_container.pack_propagate(False)
+
+                label = tk.Label(img_container, image=tk_thumb, bg='white')
+                label.pack(expand=True)
                 label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
-                
-                # Filename
-                filename_label = tk.Label(thumb_frame, text=os.path.basename(path), 
-                                        wraplength=120, font=('Segoe UI', 9), 
-                                        bg='white', fg='#212529', justify='left')
-                filename_label.pack(side=tk.LEFT, padx=(0, 8), pady=8, fill=tk.BOTH, expand=True)
+                img_container.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
+
+                # Fixed-size text container and label (uniform text area)
+                text_container = tk.Frame(thumb_frame, width=150, height=110, bg='white')
+                text_container.pack(side=tk.LEFT, padx=(0, 8), pady=8)
+                text_container.pack_propagate(False)
+
+                filename_label = tk.Label(text_container, text=os.path.basename(path), 
+                                        wraplength=140, font=('Segoe UI', 9), 
+                                        bg='white', fg='#212529', justify='left', anchor='nw')
+                filename_label.pack(fill=tk.BOTH, expand=True)
                 filename_label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
+                text_container.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
             except Exception as e:
                 print(f"Error processing {path}: {e}")
 
