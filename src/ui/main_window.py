@@ -115,6 +115,22 @@ class MainWindow:
         main_frame = tk.Frame(self.root, bg='#f0f0f0')
         main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
+        # Create a toolbar at the top
+        toolbar = ttk.Frame(main_frame, style='Card.TFrame')
+        toolbar.pack(side=tk.TOP, fill=tk.X, pady=(0, 10))
+
+        self.import_button = ttk.Button(toolbar, text="📷 Select Images", command=self.import_images, style='Primary.TButton')
+        self.import_button.pack(side=tk.LEFT, padx=(10, 5), pady=10)
+
+        self.import_folder_button = ttk.Button(toolbar, text="📂 Select Folder", command=self.import_folder, style='Secondary.TButton')
+        self.import_folder_button.pack(side=tk.LEFT, padx=5, pady=10)
+
+        self.export_button = ttk.Button(toolbar, text="📤 Export All", command=self.export_images, style='Secondary.TButton')
+        self.export_button.pack(side=tk.LEFT, padx=5, pady=10)
+
+        self.export_single_button = ttk.Button(toolbar, text="🖼️ Export Single", command=self.export_single_image, style='Secondary.TButton')
+        self.export_single_button.pack(side=tk.LEFT, padx=5, pady=10)
+
         # Left panel for thumbnails
         left_panel = ttk.Frame(main_frame, style='Card.TFrame', width=280)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
@@ -125,12 +141,6 @@ class MainWindow:
         import_frame.pack(fill=tk.X, padx=15, pady=15)
 
         ttk.Label(import_frame, text="📁 Import Images", font=('Segoe UI', 12, 'bold')).pack(anchor='w', pady=(0, 10))
-
-        self.import_button = ttk.Button(import_frame, text="📷 Select Images", command=self.import_images, style='Primary.TButton')
-        self.import_button.pack(fill=tk.X, pady=(0, 8))
-
-        self.import_folder_button = ttk.Button(import_frame, text="📂 Select Folder", command=self.import_folder, style='Secondary.TButton')
-        self.import_folder_button.pack(fill=tk.X, pady=(0, 10))
 
         # Separator
         ttk.Separator(import_frame, orient='horizontal').pack(fill=tk.X, pady=10)
@@ -178,7 +188,6 @@ class MainWindow:
 
         self.create_template_controls()
         self.create_watermark_controls()
-        self.create_export_controls()
 
     def create_template_controls(self):
         """Creates the widgets for saving and loading templates."""
@@ -261,26 +270,6 @@ class MainWindow:
         pos_grid_frame.grid_rowconfigure(1, weight=1)
         pos_grid_frame.grid_rowconfigure(2, weight=1)
 
-    def create_export_controls(self):
-        """Creates the widgets for the export control panel."""
-        export_frame = ttk.LabelFrame(self.control_panel, text="Export Settings")
-        export_frame.pack(fill=tk.X, pady=10)
-
-        ttk.Label(export_frame, text="Filename Prefix:").pack(anchor="w", padx=5)
-        self.export_prefix = tk.StringVar(value="watermarked_")
-        ttk.Entry(export_frame, textvariable=self.export_prefix).pack(fill=tk.X, padx=5, pady=2)
-
-        ttk.Label(export_frame, text="Format:").pack(anchor="w", padx=5, pady=(5,0))
-        self.export_format = tk.StringVar(value="JPEG")
-        format_menu = ttk.Combobox(export_frame, textvariable=self.export_format, values=["JPEG", "PNG", "BMP", "TIFF"])
-        format_menu.pack(fill=tk.X, padx=5, pady=2)
-
-        ttk.Label(export_frame, text="Quality (JPEG only):").pack(anchor="w", padx=5, pady=(5,0))
-        self.export_quality = tk.IntVar(value=95)
-        ttk.Scale(export_frame, from_=1, to=100, orient=tk.HORIZONTAL, variable=self.export_quality).pack(fill=tk.X, padx=5, pady=2)
-
-        export_button = tk.Button(export_frame, text="Export All Images", command=self.export_images)
-        export_button.pack(pady=10, fill=tk.X, padx=5)
 
     def save_template(self):
         """Saves the current watermark settings to a template file."""
@@ -359,6 +348,41 @@ class MainWindow:
             except Exception as e:
                 print(f"Error exporting {path}: {e}")
         print("Export complete.")
+
+    def export_single_image(self):
+        """Exports the current preview image with the watermark."""
+        if not self.current_image_path or not self.original_image:
+            print("No image in preview to export.")
+            return
+
+        output_path = filedialog.asksaveasfilename(
+            title="Save As",
+            defaultextension=f".{self.export_format.get().lower()}",
+            filetypes=[(f"{self.export_format.get()} files", f"*.{self.export_format.get().lower()}"), ("All files", "*.*")]
+        )
+        if not output_path:
+            return
+
+        watermark = Watermark(
+            text=self.watermark_text.get(),
+            font_size=self.font_size.get(),
+            color=self.watermark_color + (self.opacity.get(),),
+            position=(self.watermark_position_mode, self.watermark_offset)
+        )
+
+        try:
+            watermarked_image = self.image_processor.apply_watermark(self.original_image.copy(), watermark)
+            self.image_processor.save_image(
+                watermarked_image,
+                output_path,
+                self.export_format.get(),
+                self.export_quality.get()
+            )
+            print(f"Successfully exported {output_path}")
+        except Exception as e:
+            print(f"Error exporting single image: {e}")
+
+
 
     def on_drag_start(self, event):
         """Starts the dragging process for the watermark."""
