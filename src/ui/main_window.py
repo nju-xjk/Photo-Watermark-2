@@ -15,7 +15,7 @@ class MainWindow:
     def __init__(self, root):
         self.root = root
         self.root.title("Photo Watermark 2.0")
-        self.root.geometry("1400x800")
+        self.root.geometry("1700x900")
         self.root.configure(bg='#f0f0f0')
         
         # Configure modern styling
