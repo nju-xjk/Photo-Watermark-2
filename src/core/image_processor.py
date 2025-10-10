@@ -73,16 +73,15 @@ class ImageProcessor:
             "mid-left": (margin, (img_h - txt_h) // 2),
             "mid-center": ((img_w - txt_w) // 2, (img_h - txt_h) // 2),
             "mid-right": (img_w - txt_w - margin, (img_h - txt_h) // 2),
-            "bottom-left": (margin, img_h - txt_h - margin),
-            "bottom-center": ((img_w - txt_w) // 2, img_h - txt_h - margin),
-            "bottom-right": (img_w - txt_w - margin, img_h - txt_h - margin)
+            "bottom-left": (margin, img_h - txt_h - margin - 20),
+            "bottom-center": ((img_w - txt_w) // 2, img_h - txt_h - margin - 20),
+            "bottom-right": (img_w - txt_w - margin, img_h - txt_h - margin - 20)
         }
 
         if mode == "manual":
-            # Start from center and apply offset
-            base_x = (img_w - txt_w) // 2
-            base_y = (img_h - txt_h) // 2
-            return (base_x + offset["x"], base_y + offset["y"])
+            # For manual mode, use the offset directly as the position
+            # The offset already contains the actual position relative to the image
+            return (offset["x"], offset["y"])
         
         base_pos = base_positions.get(mode, base_positions["bottom-right"])
         return (base_pos[0] + offset["x"], base_pos[1] + offset["y"])

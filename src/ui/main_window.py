@@ -448,6 +448,40 @@ class MainWindow:
         self.is_dragging = True
         self.drag_start_pos["x"] = event.x
         self.drag_start_pos["y"] = event.y
+        
+        # Calculate current watermark position in image coordinates
+        if self.original_image and self.watermark_text.get():
+            # Get current watermark position based on current mode
+            current_mode = self.watermark_position_mode
+            current_offset = self.watermark_offset.copy()
+            
+            # Calculate the actual position of the watermark
+            from core.watermark import Watermark
+            temp_watermark = Watermark(
+                text=self.watermark_text.get(),
+                font_size=self.font_size.get(),
+                color=(255, 255, 255, 255),
+                position=(current_mode, current_offset)
+            )
+            
+            # Get the actual position from the image processor
+            from PIL import ImageDraw, ImageFont
+            font = self.image_processor._load_font_with_fallbacks(temp_watermark)
+            draw = ImageDraw.Draw(Image.new('RGBA', (1, 1)))
+            text_bbox = draw.textbbox((0, 0), temp_watermark.text, font=font)
+            text_width = text_bbox[2] - text_bbox[0]
+            text_height = text_bbox[3] - text_bbox[1]
+            
+            actual_pos = self.image_processor.calculate_position(
+                self.original_image.size, 
+                (text_width, text_height), 
+                (current_mode, current_offset)
+            )
+            
+            # Set the actual position as the offset for manual mode
+            self.watermark_offset["x"] = actual_pos[0]
+            self.watermark_offset["y"] = actual_pos[1]
+        
         self.watermark_position_mode = "manual" # Switch to manual positioning
 
     def on_drag_motion(self, event):
