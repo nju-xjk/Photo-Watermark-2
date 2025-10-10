@@ -86,9 +86,9 @@ class MainWindow:
                  background=[('active', '#f8f9fa'),
                            ('pressed', '#e9ecef'),
                            ('!active', 'white')],
-                 foreground=[('active', '#495057'),
-                           ('pressed', '#495057'),
-                           ('!active', '#495057')],
+                 foreground=[('active', '#212529'),
+                           ('pressed', '#212529'),
+                           ('!active', '#212529')],
                  bordercolor=[('active', '#dee2e6'),
                             ('pressed', '#adb5bd'),
                             ('!active', '#dee2e6')])
@@ -107,7 +107,7 @@ class MainWindow:
         
         style.configure('Modern.TLabelframe.Label',
                        background='white',
-                       foreground='#495057',
+                       foreground='#212529',
                        font=('Segoe UI', 10, 'bold'))
 
     def create_widgets(self):
@@ -158,13 +158,17 @@ class MainWindow:
         self.center_panel.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
 
         # Image display area
-        image_display_frame = ttk.Frame(self.center_panel)
-        image_display_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+        # Fixed-size preview area to prevent layout from growing with image size
+        self.preview_width = 900
+        self.preview_height = 600
+        self.image_display_frame = ttk.Frame(self.center_panel, width=self.preview_width, height=self.preview_height)
+        self.image_display_frame.pack(padx=20, pady=20)
+        self.image_display_frame.pack_propagate(False)
 
-        self.image_label = tk.Label(image_display_frame, 
+        self.image_label = tk.Label(self.image_display_frame, 
                                    text="🎨 Workspace\n\nDrag & drop images here or use the import buttons\n\nSelect an image from the list to start editing", 
                                    font=('Segoe UI', 12),
-                                   fg='#6c757d',
+                                   fg='#212529',
                                    bg='white',
                                    justify='center')
         self.image_label.pack(fill=tk.BOTH, expand=True)
@@ -461,7 +465,7 @@ class MainWindow:
                 # Filename
                 filename_label = tk.Label(thumb_frame, text=os.path.basename(path), 
                                         wraplength=120, font=('Segoe UI', 9), 
-                                        bg='white', fg='#495057', justify='left')
+                                        bg='white', fg='#212529', justify='left')
                 filename_label.pack(side=tk.LEFT, padx=(0, 8), pady=8, fill=tk.BOTH, expand=True)
                 filename_label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
             except Exception as e:
@@ -481,13 +485,19 @@ class MainWindow:
 
     def display_image_in_workspace(self, img):
         """Displays an image in the main workspace."""
-        workspace_size = (self.center_panel.winfo_width(), self.center_panel.winfo_height())
-        if workspace_size[0] > 1 and workspace_size[1] > 1:
-            self.display_to_original_ratio = min(workspace_size[0] / self.original_image.width, workspace_size[1] / self.original_image.height)
-            display_img = self.image_processor.resize_to_fit(img, workspace_size)
-        else:
-            self.display_to_original_ratio = 1.0
-            display_img = img
+        # Use fixed preview area's size to compute scaling, avoid layout growth
+        width = self.image_display_frame.winfo_width()
+        height = self.image_display_frame.winfo_height()
+        if width <= 1 or height <= 1:
+            width = getattr(self, 'preview_width', 900)
+            height = getattr(self, 'preview_height', 600)
+        workspace_size = (width, height)
+
+        self.display_to_original_ratio = min(
+            workspace_size[0] / self.original_image.width,
+            workspace_size[1] / self.original_image.height
+        ) if self.original_image else 1.0
+        display_img = self.image_processor.resize_to_fit(img, workspace_size)
         self.main_photo_image = ImageTk.PhotoImage(display_img)
         self.image_label.config(image=self.main_photo_image, text="")
 
