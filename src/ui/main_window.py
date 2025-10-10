@@ -136,8 +136,8 @@ class MainWindow:
         self.export_single_button = ttk.Button(toolbar, text="🖼️ Export Single", command=self.export_single_image, style='Secondary.TButton')
         self.export_single_button.pack(side=tk.LEFT, padx=5, pady=10)
 
-        # Left panel for thumbnails
-        left_panel = ttk.Frame(main_frame, style='Card.TFrame', width=280)
+        # Left panel for thumbnails (wider to show longer filenames)
+        left_panel = ttk.Frame(main_frame, style='Card.TFrame', width=340)
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
         left_panel.pack_propagate(False)
 
@@ -190,6 +190,7 @@ class MainWindow:
 
         self.create_template_controls()
         self.create_watermark_controls()
+        self.create_export_controls()
 
     def create_template_controls(self):
         """Creates the widgets for saving and loading templates."""
@@ -272,6 +273,47 @@ class MainWindow:
         pos_grid_frame.grid_rowconfigure(1, weight=1)
         pos_grid_frame.grid_rowconfigure(2, weight=1)
 
+    def create_export_controls(self):
+        """Creates export settings including naming rules and format/quality."""
+        export_frame = ttk.LabelFrame(self.control_panel, text="📤 Export Settings", style='Modern.TLabelframe')
+        export_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
+
+        inner = ttk.Frame(export_frame)
+        inner.pack(fill=tk.X, padx=10, pady=10)
+
+        # Naming rule
+        ttk.Label(inner, text="🧩 Filename rule:", font=('Segoe UI', 9, 'bold')).pack(anchor="w")
+        self.naming_rule = tk.StringVar(value="original")  # original | prefix | suffix
+
+        rule_row = ttk.Frame(inner)
+        rule_row.pack(fill=tk.X, pady=(5, 8))
+
+        ttk.Radiobutton(rule_row, text="Keep original", value="original", variable=self.naming_rule).pack(side=tk.LEFT)
+        ttk.Radiobutton(rule_row, text="Add prefix", value="prefix", variable=self.naming_rule).pack(side=tk.LEFT, padx=(10,0))
+        ttk.Radiobutton(rule_row, text="Add suffix", value="suffix", variable=self.naming_rule).pack(side=tk.LEFT, padx=(10,0))
+
+        # Prefix / Suffix inputs
+        ps_row = ttk.Frame(inner)
+        ps_row.pack(fill=tk.X)
+        ttk.Label(ps_row, text="Prefix:").pack(side=tk.LEFT)
+        self.export_prefix = tk.StringVar(value=self.export_prefix.get() if isinstance(self.export_prefix, tk.Variable) else "")
+        ttk.Entry(ps_row, textvariable=self.export_prefix, width=12).pack(side=tk.LEFT, padx=(5, 15))
+        ttk.Label(ps_row, text="Suffix:").pack(side=tk.LEFT)
+        self.export_suffix = tk.StringVar(value="")
+        ttk.Entry(ps_row, textvariable=self.export_suffix, width=12).pack(side=tk.LEFT, padx=(5, 0))
+
+        # Format & quality
+        fmt_row = ttk.Frame(inner)
+        fmt_row.pack(fill=tk.X, pady=(10,0))
+        ttk.Label(fmt_row, text="Format:").pack(side=tk.LEFT)
+        self.export_format = tk.StringVar(value=self.export_format.get() if isinstance(self.export_format, tk.Variable) else "JPEG")
+        fmt_box = ttk.Combobox(fmt_row, textvariable=self.export_format, values=["JPEG", "PNG"], state="readonly", width=6)
+        fmt_box.pack(side=tk.LEFT, padx=(5, 15))
+
+        ttk.Label(fmt_row, text="JPEG Quality:").pack(side=tk.LEFT)
+        self.export_quality = tk.IntVar(value=self.export_quality.get() if isinstance(self.export_quality, tk.Variable) else 95)
+        ttk.Spinbox(fmt_row, from_=1, to=100, textvariable=self.export_quality, width=6).pack(side=tk.LEFT, padx=(5,0))
+
 
     def save_template(self):
         """Saves the current watermark settings to a template file."""
@@ -338,7 +380,17 @@ class MainWindow:
                 watermarked_image = self.image_processor.apply_watermark(original_image, watermark)
 
                 base_filename = os.path.basename(path)
-                new_filename = f"{self.export_prefix.get()}{base_filename}"
+                name, ext = os.path.splitext(base_filename)
+                rule = self.naming_rule.get() if hasattr(self, 'naming_rule') else 'original'
+                prefix = self.export_prefix.get() if hasattr(self, 'export_prefix') else ''
+                suffix = self.export_suffix.get() if hasattr(self, 'export_suffix') else ''
+                if rule == 'prefix':
+                    new_name = f"{prefix}{name}{ext}"
+                elif rule == 'suffix':
+                    new_name = f"{name}{suffix}{ext}"
+                else:
+                    new_name = base_filename
+                new_filename = new_name
                 output_path = os.path.join(output_dir, new_filename)
 
                 self.image_processor.save_image(
@@ -476,13 +528,13 @@ class MainWindow:
                 label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
                 img_container.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
 
-                # Fixed-size text container and label (uniform text area)
-                text_container = tk.Frame(thumb_frame, width=150, height=110, bg='white')
+                # Fixed-size text container and label (uniform text area, wider)
+                text_container = tk.Frame(thumb_frame, width=200, height=110, bg='white')
                 text_container.pack(side=tk.LEFT, padx=(0, 8), pady=8)
                 text_container.pack_propagate(False)
 
                 filename_label = tk.Label(text_container, text=os.path.basename(path), 
-                                        wraplength=140, font=('Segoe UI', 9), 
+                                        wraplength=190, font=('Segoe UI', 9), 
                                         bg='white', fg='#212529', justify='left', anchor='nw')
                 filename_label.pack(fill=tk.BOTH, expand=True)
                 filename_label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
