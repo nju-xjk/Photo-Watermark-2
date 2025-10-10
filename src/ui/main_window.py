@@ -563,7 +563,9 @@ class MainWindow:
                 label = tk.Label(img_container, image=tk_thumb, bg='white')
                 label.pack(expand=True)
                 label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
+                label.bind("<Button-3>", lambda e, p=path: self.show_context_menu(e, p))  # Right-click for context menu
                 img_container.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
+                img_container.bind("<Button-3>", lambda e, p=path: self.show_context_menu(e, p))  # Right-click for context menu
 
                 # Fixed-size text container; ensure wrap within available width
                 text_container = tk.Frame(thumb_frame, width=160, height=110, bg='white')
@@ -575,7 +577,9 @@ class MainWindow:
                                         bg='white', fg='#212529', justify='left', anchor='nw')
                 filename_label.pack(fill=tk.BOTH, expand=True)
                 filename_label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
+                filename_label.bind("<Button-3>", lambda e, p=path: self.show_context_menu(e, p))  # Right-click for context menu
                 text_container.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
+                text_container.bind("<Button-3>", lambda e, p=path: self.show_context_menu(e, p))  # Right-click for context menu
             except Exception as e:
                 print(f"Error processing {path}: {e}")
 
@@ -684,3 +688,45 @@ class MainWindow:
             elif os.path.isfile(path) and path.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.tiff')):
                 valid_filepaths.append(path)
         self.import_images(valid_filepaths)
+
+    def show_context_menu(self, event, image_path):
+        """Shows the right-click context menu for an image."""
+        context_menu = tk.Menu(self.root, tearoff=0)
+        context_menu.add_command(label="🗑️ Remove Image", command=lambda: self.remove_image(image_path))
+        context_menu.add_separator()
+        context_menu.add_command(label="📁 Show in Folder", command=lambda: self.show_in_folder(image_path))
+        
+        try:
+            context_menu.tk_popup(event.x_root, event.y_root)
+        finally:
+            context_menu.grab_release()
+
+    def remove_image(self, image_path):
+        """Removes an image from the list and updates the UI."""
+        if image_path in self.filepaths:
+            # Remove from filepaths list
+            self.filepaths.remove(image_path)
+            
+            # Remove from image states if it exists
+            if image_path in self.image_states:
+                del self.image_states[image_path]
+            
+            # If this was the currently selected image, clear the preview
+            if self.current_image_path == image_path:
+                self.current_image_path = None
+                self.original_image = None
+                self.image_label.config(image="", text="🎨 Workspace\n\nDrag & drop images here or use the import buttons\n\nSelect an image from the list to start editing")
+            
+            # Update the thumbnail list
+            self.update_thumbnail_list()
+            print(f"Removed image: {os.path.basename(image_path)}")
+
+    def show_in_folder(self, image_path):
+        """Opens the folder containing the image in Windows Explorer."""
+        try:
+            import subprocess
+            import os
+            folder_path = os.path.dirname(image_path)
+            subprocess.run(['explorer', '/select,', image_path], check=True)
+        except Exception as e:
+            print(f"Error opening folder: {e}")
