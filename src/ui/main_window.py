@@ -148,6 +148,7 @@ class MainWindow:
         self.scrollable_frame.bind("<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all")))
         canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
+        canvas.bind_all("<MouseWheel>", lambda e: canvas.yview_scroll(int(-1*(e.delta/120)), "units"))
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
 
@@ -407,8 +408,10 @@ class MainWindow:
             filepaths = filedialog.askopenfilenames(title='Select one or more images', filetypes=filetypes)
         
         if filepaths:
-            self.filepaths.extend(filepaths)
-            self.update_thumbnail_list()
+            new_paths = [p for p in filepaths if p not in self.filepaths]
+            self.filepaths.extend(new_paths)
+            if new_paths:
+                self.update_thumbnail_list()
 
     def import_folder(self):
         """Opens a dialog to select a folder and imports all valid images from it."""
