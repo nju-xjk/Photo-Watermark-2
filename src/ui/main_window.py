@@ -139,9 +139,6 @@ class MainWindow:
         import_frame = ttk.Frame(left_panel)
         import_frame.pack(fill=tk.X, padx=15, pady=15)
 
-        # Thumbnails section
-        ttk.Label(import_frame, text="🖼️ Image List", font=('Segoe UI', 12, 'bold')).pack(anchor='w', pady=(0, 10))
-
         # Thumbnails scrollable area
         thumbnails_frame = ttk.Frame(left_panel)
         thumbnails_frame.pack(fill=tk.BOTH, expand=True, padx=15, pady=(0, 15))
