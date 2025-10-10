@@ -162,7 +162,8 @@ class MainWindow:
         self.preview_width = 900
         self.preview_height = 600
         self.image_display_frame = ttk.Frame(self.center_panel, width=self.preview_width, height=self.preview_height)
-        self.image_display_frame.pack(padx=20, pady=20)
+        # Center the preview frame within the center panel (both horizontally and vertically)
+        self.image_display_frame.place(relx=0.5, rely=0.5, anchor='center')
         self.image_display_frame.pack_propagate(False)
 
         self.image_label = tk.Label(self.image_display_frame, 
@@ -492,6 +493,13 @@ class MainWindow:
         try:
             self.original_image = self.image_processor.load_image(path)
             if self.original_image is None: return
+            # If using defaults (no prior state), auto-derive an initial font size from image size
+            if path not in self.image_states:
+                img_w, img_h = self.original_image.size
+                # Use shorter side with a sensible ratio for legibility
+                base = min(img_w, img_h)
+                estimated = max(14, int(base * 0.05))  # ~5% of shorter edge
+                self.font_size.set(estimated)
             self.preview_watermark()
         except Exception as e:
             print(f"Error displaying main image {path}: {e}")
