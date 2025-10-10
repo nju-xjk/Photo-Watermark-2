@@ -693,8 +693,6 @@ class MainWindow:
         """Shows the right-click context menu for an image."""
         context_menu = tk.Menu(self.root, tearoff=0)
         context_menu.add_command(label="🗑️ Remove Image", command=lambda: self.remove_image(image_path))
-        context_menu.add_separator()
-        context_menu.add_command(label="📁 Show in Folder", command=lambda: self.show_in_folder(image_path))
         
         try:
             context_menu.tk_popup(event.x_root, event.y_root)
@@ -720,13 +718,3 @@ class MainWindow:
             # Update the thumbnail list
             self.update_thumbnail_list()
             print(f"Removed image: {os.path.basename(image_path)}")
-
-    def show_in_folder(self, image_path):
-        """Opens the folder containing the image in Windows Explorer."""
-        try:
-            import subprocess
-            import os
-            folder_path = os.path.dirname(image_path)
-            subprocess.run(['explorer', '/select,', image_path], check=True)
-        except Exception as e:
-            print(f"Error opening folder: {e}")
