@@ -136,14 +136,8 @@ class MainWindow:
         left_panel.pack(side=tk.LEFT, fill=tk.Y, padx=(0, 10))
         left_panel.pack_propagate(False)
 
-        # Import section
         import_frame = ttk.Frame(left_panel)
         import_frame.pack(fill=tk.X, padx=15, pady=15)
-
-        ttk.Label(import_frame, text="📁 Import Images", font=('Segoe UI', 12, 'bold')).pack(anchor='w', pady=(0, 10))
-
-        # Separator
-        ttk.Separator(import_frame, orient='horizontal').pack(fill=tk.X, pady=10)
 
         # Thumbnails section
         ttk.Label(import_frame, text="🖼️ Image List", font=('Segoe UI', 12, 'bold')).pack(anchor='w', pady=(0, 10))
