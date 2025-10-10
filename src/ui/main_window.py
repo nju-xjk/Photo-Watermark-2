@@ -35,6 +35,11 @@ class MainWindow:
         self.display_to_original_ratio = 1.0
         self.image_states = {}
 
+        # Export settings defaults (used by export actions)
+        self.export_prefix = tk.StringVar(value="")
+        self.export_format = tk.StringVar(value="JPEG")
+        self.export_quality = tk.IntVar(value=95)
+
         self.create_widgets()
 
         self.root.drop_target_register(DND_FILES)
