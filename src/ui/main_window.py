@@ -30,6 +30,7 @@ class MainWindow:
         except Exception as e:
             print(f"Error initializing templates: {e}")
         self.filepaths = []
+        self.filepath_set = set()
         self.tk_thumbnails = []
         self.current_image_path = None
         self.original_image = None
@@ -1092,9 +1093,17 @@ class MainWindow:
             filepaths = filedialog.askopenfilenames(title='Select one or more images', filetypes=filetypes)
         
         if filepaths:
-            new_paths = [p for p in filepaths if p not in self.filepaths]
-            self.filepaths.extend(new_paths)
+            new_paths = []
+            for p in filepaths:
+                try:
+                    norm = os.path.normcase(os.path.abspath(p))
+                except Exception:
+                    norm = p
+                if norm not in self.filepath_set:
+                    new_paths.append(p)
+                    self.filepath_set.add(norm)
             if new_paths:
+                self.filepaths.extend(new_paths)
                 self.update_thumbnail_list()
 
     def import_folder(self):
@@ -1290,6 +1299,14 @@ class MainWindow:
         if image_path in self.filepaths:
             # Remove from filepaths list
             self.filepaths.remove(image_path)
+            
+            # Remove normalized path from set to allow re-importing later
+            try:
+                norm = os.path.normcase(os.path.abspath(image_path))
+            except Exception:
+                norm = image_path
+            if hasattr(self, 'filepath_set'):
+                self.filepath_set.discard(norm)
             
             # Remove from image states if it exists
             if image_path in self.image_states:
