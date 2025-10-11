@@ -69,9 +69,9 @@ class ConfigManager:
                 'font_size_auto': True,    # default template uses auto font sizing
                 'opacity': 50,             # 0-100 percent
                 'color': [255, 255, 255],  # RGB list for JSON compatibility
-                'position_mode': 'bottom-right',
-                'offset_x': 0,
-                'offset_y': 0
+                'position_mode': 'relative',
+                'offset_x': 0.5,           # relative fraction across available area (0..1)
+                'offset_y': 0.5            # relative fraction across available area (0..1)
             }
         cfg.setdefault('selected_template', 'Default')
         self.save_config()

@@ -418,9 +418,18 @@ class MainWindow:
             color_val = settings.get("color", [255, 255, 255])
             self.watermark_color = tuple(color_val)
             # Position
-            self.watermark_position_mode = settings.get("position_mode", "bottom-right")
-            self.watermark_offset["x"] = settings.get("offset_x", 0)
-            self.watermark_offset["y"] = settings.get("offset_y", 0)
+            pos_mode = settings.get("position_mode", "bottom-right")
+            if pos_mode == "relative":
+                self.watermark_position_mode = "relative"
+                try:
+                    self.watermark_offset["x"] = float(settings.get("offset_x", 0.5))
+                    self.watermark_offset["y"] = float(settings.get("offset_y", 0.5))
+                except Exception:
+                    self.watermark_offset["x"], self.watermark_offset["y"] = 0.5, 0.5
+            else:
+                self.watermark_position_mode = pos_mode
+                self.watermark_offset["x"] = settings.get("offset_x", 0)
+                self.watermark_offset["y"] = settings.get("offset_y", 0)
             # Sync grid selection and preview
             self.update_position_grid_selection(self.watermark_position_mode)
             self.clear_position_grid_focus()
@@ -486,21 +495,25 @@ class MainWindow:
         pos_row.pack(fill=tk.X, pady=(10, 0))
         ttk.Label(pos_row, text="Position:").pack(side=tk.LEFT)
         positions = [
+            "relative",
             "top-left", "top-center", "top-right",
             "mid-left", "mid-center", "mid-right",
             "bottom-left", "bottom-center", "bottom-right",
             "manual"
         ]
-        pos_var = tk.StringVar(value=self.watermark_position_mode)
+        # Default to saving as relative positioning
+        pos_var = tk.StringVar(value="relative")
         ttk.Combobox(pos_row, textvariable=pos_var, values=positions, state='readonly', width=15).pack(side=tk.LEFT, padx=(5, 10))
 
         offset_row = ttk.Frame(container)
         offset_row.pack(fill=tk.X, pady=(10, 0))
-        ttk.Label(offset_row, text="Offset X:").pack(side=tk.LEFT)
-        offx_var = tk.DoubleVar(value=self.watermark_offset.get('x', 0))
+        ttk.Label(offset_row, text="Relative X (0-1):").pack(side=tk.LEFT)
+        # Initialize relative offsets from current absolute position/mode
+        _rx, _ry = self._compute_relative_from_current()
+        offx_var = tk.DoubleVar(value=_rx)
         ttk.Entry(offset_row, textvariable=offx_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
-        ttk.Label(offset_row, text="Offset Y:").pack(side=tk.LEFT)
-        offy_var = tk.DoubleVar(value=self.watermark_offset.get('y', 0))
+        ttk.Label(offset_row, text="Relative Y (0-1):").pack(side=tk.LEFT)
+        offy_var = tk.DoubleVar(value=_ry)
         ttk.Entry(offset_row, textvariable=offy_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
 
         btns = ttk.Frame(container)
@@ -612,6 +625,7 @@ class MainWindow:
         pos_row.pack(fill=tk.X, pady=(10, 0))
         ttk.Label(pos_row, text="Position:").pack(side=tk.LEFT)
         positions = [
+            "relative",
             "top-left", "top-center", "top-right",
             "mid-left", "mid-center", "mid-right",
             "bottom-left", "bottom-center", "bottom-right",
@@ -622,10 +636,10 @@ class MainWindow:
 
         offset_row = ttk.Frame(right)
         offset_row.pack(fill=tk.X, pady=(10, 0))
-        ttk.Label(offset_row, text="Offset X:").pack(side=tk.LEFT)
+        ttk.Label(offset_row, text="Relative X (0-1):").pack(side=tk.LEFT)
         offx_var = tk.DoubleVar()
         ttk.Entry(offset_row, textvariable=offx_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
-        ttk.Label(offset_row, text="Offset Y:").pack(side=tk.LEFT)
+        ttk.Label(offset_row, text="Relative Y (0-1):").pack(side=tk.LEFT)
         offy_var = tk.DoubleVar()
         ttk.Entry(offset_row, textvariable=offy_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
 
@@ -740,6 +754,43 @@ class MainWindow:
             win.geometry(f"{width}x{height}+{x}+{y}")
         except Exception:
             pass
+
+    # ------------------------------
+    # Relative position helpers
+    # ------------------------------
+    def _get_text_size(self, text, font_size):
+        try:
+            tmp_wm = Watermark(text=text, font_size=font_size, color=(255,255,255,255))
+            font = self.image_processor._load_font_with_fallbacks(tmp_wm)
+            base_img_size = self.original_image.size if getattr(self, 'original_image', None) else (100, 100)
+            tmp_img = Image.new('RGBA', base_img_size, (255, 255, 255, 0))
+            draw = ImageDraw.Draw(tmp_img)
+            bbox = draw.textbbox((0, 0), text, font=font)
+            return (bbox[2] - bbox[0], bbox[3] - bbox[1])
+        except Exception:
+            return (100, 40)
+
+    def _compute_relative_from_current(self):
+        try:
+            if not getattr(self, 'original_image', None):
+                return (0.5, 0.5)
+            img_w, img_h = self.original_image.size
+            txt_w, txt_h = self._get_text_size(self.watermark_text.get(), self.font_size.get())
+            pos = self.image_processor.calculate_position(
+                (img_w, img_h), (txt_w, txt_h), (self.watermark_position_mode, self.watermark_offset)
+            )
+            margin = 10
+            x_min = margin
+            x_max = img_w - txt_w - margin
+            y_min = margin
+            y_max = img_h - txt_h - margin - 20
+            x_range = max(1, x_max - x_min)
+            y_range = max(1, y_max - y_min)
+            rel_x = (pos[0] - x_min) / x_range
+            rel_y = (pos[1] - y_min) / y_range
+            return (max(0.0, min(1.0, rel_x)), max(0.0, min(1.0, rel_y)))
+        except Exception:
+            return (0.5, 0.5)
 
     def rgb_to_hex(self, rgb):
         r, g, b = rgb

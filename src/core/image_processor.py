@@ -83,6 +83,25 @@ class ImageProcessor:
             # The offset already contains the actual position relative to the image
             return (offset["x"], offset["y"])
         
+        if mode == "relative":
+            # Interpret offset as relative fractions (0..1) of available drawing area
+            try:
+                rel_x = float(offset.get("x", 0))
+                rel_y = float(offset.get("y", 0))
+            except Exception:
+                rel_x, rel_y = 0.5, 0.5
+            rel_x = max(0.0, min(1.0, rel_x))
+            rel_y = max(0.0, min(1.0, rel_y))
+            x_min = margin
+            x_max = img_w - txt_w - margin
+            y_min = margin
+            y_max = img_h - txt_h - margin - 20
+            x_range = max(0, x_max - x_min)
+            y_range = max(0, y_max - y_min)
+            x = x_min + int(round(rel_x * x_range))
+            y = y_min + int(round(rel_y * y_range))
+            return (x, y)
+        
         base_pos = base_positions.get(mode, base_positions["bottom-right"])
         return (base_pos[0] + offset["x"], base_pos[1] + offset["y"])
 
