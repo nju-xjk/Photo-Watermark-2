@@ -106,15 +106,15 @@ class MainWindow:
                        borderwidth=1)
         
         style.map('Selected.TButton',
-                 background=[('active', '#dbeafe'), # light blue
-                           ('pressed', '#bfdbfe'),
-                           ('!active', '#dbeafe')],
-                 foreground=[('active', '#1e3a8a'),
-                           ('pressed', '#1e3a8a'),
-                           ('!active', '#1e3a8a')],
-                 bordercolor=[('active', '#93c5fd'),
-                            ('pressed', '#60a5fa'),
-                            ('!active', '#93c5fd')])
+                 background=[('active', '#60a5fa'), # more saturated blue
+                           ('pressed', '#3b82f6'),
+                           ('!active', '#93c5fd')],
+                 foreground=[('active', 'white'),
+                           ('pressed', 'white'),
+                           ('!active', 'white')],
+                 bordercolor=[('active', '#60a5fa'),
+                            ('pressed', '#3b82f6'),
+                            ('!active', '#60a5fa')])
         
         # Configure modern frame style
         style.configure('Card.TFrame',
