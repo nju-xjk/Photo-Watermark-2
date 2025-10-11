@@ -36,7 +36,7 @@ class MainWindow:
         self.image_states = {}
 
         # Export settings defaults (used by export actions)
-        self.export_prefix = tk.StringVar(value="")
+        self.export_prefix = tk.StringVar(value="wm_")
         self.export_format = tk.StringVar(value="JPEG")
         self.export_quality = tk.IntVar(value=95)
 
@@ -299,10 +299,10 @@ class MainWindow:
         ps_row = ttk.Frame(inner)
         ps_row.pack(fill=tk.X)
         ttk.Label(ps_row, text="Prefix:").pack(side=tk.LEFT)
-        self.export_prefix = tk.StringVar(value=self.export_prefix.get() if isinstance(self.export_prefix, tk.Variable) else "")
+        self.export_prefix = tk.StringVar(value=self.export_prefix.get() if isinstance(self.export_prefix, tk.Variable) else "wm_")
         ttk.Entry(ps_row, textvariable=self.export_prefix, width=12).pack(side=tk.LEFT, padx=(5, 15))
         ttk.Label(ps_row, text="Suffix:").pack(side=tk.LEFT)
-        self.export_suffix = tk.StringVar(value="")
+        self.export_suffix = tk.StringVar(value="_watermarked")
         ttk.Entry(ps_row, textvariable=self.export_suffix, width=12).pack(side=tk.LEFT, padx=(5, 0))
 
         # Format & quality
