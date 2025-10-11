@@ -253,10 +253,26 @@ class MainWindow:
         opacity_frame = ttk.Frame(watermark_frame)
         opacity_frame.pack(fill=tk.X, padx=10, pady=5)
         
-        ttk.Label(opacity_frame, text="👁️ Opacity (0% - 100%):", font=('Segoe UI', 9, 'bold')).pack(anchor="w")
+        # Header with label on the left and live value on the right
+        header = ttk.Frame(opacity_frame)
+        header.pack(fill=tk.X)
+        ttk.Label(header, text="👁️ Opacity (0% - 100%):", font=('Segoe UI', 9, 'bold')).pack(side=tk.LEFT)
+        
         self.opacity = tk.IntVar(value=50)
+        self.opacity_value_var = tk.StringVar(value=f"{self.opacity.get()}%")
+        ttk.Label(header, textvariable=self.opacity_value_var, font=('Segoe UI', 9)).pack(side=tk.RIGHT)
+        
         opacity_scale = ttk.Scale(opacity_frame, from_=0, to=100, orient=tk.HORIZONTAL, variable=self.opacity, command=self.schedule_preview)
         opacity_scale.pack(fill=tk.X, pady=(5, 0))
+        
+        # Live update the right-side value when the scale changes or when opacity is set programmatically
+        try:
+            self.opacity.trace_add('write', lambda *args: self.opacity_value_var.set(f"{self.opacity.get()}%"))
+        except Exception:
+            # Fallback for older Tk versions
+            self.opacity.trace('w', lambda *args: self.opacity_value_var.set(f"{self.opacity.get()}%"))
+        # pack is already done above, avoid duplicate pack
+        # opacity_scale.pack(fill=tk.X, pady=(5, 0))
 
         # Color button
         color_frame = ttk.Frame(watermark_frame)
