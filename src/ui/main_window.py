@@ -426,7 +426,7 @@ class MainWindow:
             if not output_dir:
                 return
             if _norm(output_dir) in original_dirs:
-                messagebox.showerror("输出文件夹无效", "为防止覆盖原图，禁止导出到原始文件夹。请重新选择其他文件夹。")
+                messagebox.showerror("Invalid Output Folder", "To prevent overwriting originals, exporting to the source folder is not allowed. Please choose a different folder.")
                 continue
             break
         for path in self.filepaths:
@@ -509,7 +509,7 @@ class MainWindow:
             if not output_dir:
                 return
             if _norm(output_dir) == original_dir:
-                messagebox.showerror("输出文件夹无效", "为防止覆盖原图，禁止导出到原始文件夹。请重新选择其他文件夹。")
+                messagebox.showerror("Invalid Output Folder", "To prevent overwriting originals, exporting to the source folder is not allowed. Please choose a different folder.")
                 continue
             break
         # Determine output filename based on naming rule and enforce extension by selected format
