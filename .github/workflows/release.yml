@@ -1,0 +1,21 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  create_release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: Photo Watermark 2.0 (Windows x64)
+          generateReleaseNotes: true
+          draft: false
+          prerelease: false
+          artifacts: release/PhotoWatermark2-win-x64.zip
+          token: ${{ secrets.GITHUB_TOKEN }}
