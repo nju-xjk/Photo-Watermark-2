@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, ttk, colorchooser
+from tkinter import filedialog, ttk, colorchooser, messagebox
 from tkinterdnd2 import DND_FILES
 from PIL import Image, ImageTk, ImageDraw, ImageFont
 import os
@@ -414,10 +414,21 @@ class MainWindow:
             print("No images to export.")
             return
 
-        output_dir = filedialog.askdirectory(title="Select Output Directory")
-        if not output_dir:
-            return
-
+        # Prevent exporting to any original folder used by imported images
+        def _norm(p):
+            try:
+                return os.path.normcase(os.path.abspath(p))
+            except Exception:
+                return p
+        original_dirs = {_norm(os.path.dirname(p)) for p in self.filepaths}
+        while True:
+            output_dir = filedialog.askdirectory(title="Select Output Directory")
+            if not output_dir:
+                return
+            if _norm(output_dir) in original_dirs:
+                messagebox.showerror("输出文件夹无效", "为防止覆盖原图，禁止导出到原始文件夹。请重新选择其他文件夹。")
+                continue
+            break
         for path in self.filepaths:
             try:
                 original_image = self.image_processor.load_image(path)
@@ -486,10 +497,21 @@ class MainWindow:
             print("No image in preview to export.")
             return
 
-        output_dir = filedialog.askdirectory(title="Select Output Folder")
-        if not output_dir:
-            return
-
+        # Prevent exporting to the original folder of the current image
+        def _norm(p):
+            try:
+                return os.path.normcase(os.path.abspath(p))
+            except Exception:
+                return p
+        original_dir = _norm(os.path.dirname(self.current_image_path))
+        while True:
+            output_dir = filedialog.askdirectory(title="Select Output Folder")
+            if not output_dir:
+                return
+            if _norm(output_dir) == original_dir:
+                messagebox.showerror("输出文件夹无效", "为防止覆盖原图，禁止导出到原始文件夹。请重新选择其他文件夹。")
+                continue
+            break
         # Determine output filename based on naming rule and enforce extension by selected format
         base_filename = os.path.basename(self.current_image_path)
         name = os.path.splitext(base_filename)[0]
