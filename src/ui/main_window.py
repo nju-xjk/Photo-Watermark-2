@@ -654,11 +654,15 @@ class MainWindow:
         ttk.Entry(offset_row, textvariable=offy_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
 
         # Buttons
+        current_selected_name = {'val': None}
         btns = ttk.Frame(right)
         btns.pack(fill=tk.X, pady=(15, 0))
         def do_update():
             name = name_var.get().strip()
-            if name == 'Default':
+            if not current_selected_name['val']:
+                messagebox.showerror("Manage Templates", "No template selected.", parent=dlg)
+                return
+            if current_selected_name['val'] == 'Default':
                 messagebox.showerror("Manage Templates", "Default template cannot be modified.", parent=dlg)
                 return
             try:
@@ -676,10 +680,35 @@ class MainWindow:
                 "offset_y": float(offy_var.get()),
             }
             try:
-                self.config_manager.update_template(name, tmpl)
+                # Handle rename if name changed
+                old_name = current_selected_name['val']
+                if name != old_name:
+                    # create new key, delete old
+                    templates = self.config_manager.config.setdefault('templates', {})
+                    if name in templates:
+                        messagebox.showerror("Manage Templates", "A template with the new name already exists.", parent=dlg)
+                        return
+                    templates[name] = tmpl
+                    del templates[old_name]
+                    # update selected template if needed
+                    if self.config_manager.get_selected_template_name() == old_name:
+                        self.config_manager.set_selected_template(name)
+                    self.config_manager.save_config()
+                else:
+                    self.config_manager.update_template(name, tmpl)
                 messagebox.showinfo("Manage Templates", "Template updated successfully.", parent=dlg)
-                # Refresh list and dropdown
+                # Refresh list and dropdown without clearing fields
                 refresh_templates()
+                # Reselect the renamed/current template
+                idx = None
+                for i in range(listbox.size()):
+                    if listbox.get(i) == name:
+                        idx = i
+                        break
+                if idx is not None:
+                    listbox.select_clear(0, tk.END)
+                    listbox.select_set(idx)
+                    listbox.event_generate('<<ListboxSelect>>')
             except Exception as e:
                 messagebox.showerror("Manage Templates", f"Failed to update template: {e}", parent=dlg)
         def do_delete():
@@ -725,13 +754,15 @@ class MainWindow:
         def load_selected(evt=None):
             sel = listbox.curselection()
             if not sel:
-                clear_fields()
+                # 不清空右侧字段，保持用户正在编辑的内容
                 return
             name = listbox.get(sel[0])
             tmpl = self.config_manager.get_template(name)
             if not tmpl:
-                clear_fields()
+                # 未找到模板则不动现有字段
                 return
+            # 记录当前选中的原始模板名，支持重命名
+            current_selected_name['val'] = name
             name_var.set(name)
             text_var.set(tmpl.get('text', ''))
             size_var.set(int(tmpl.get('font_size', 40)))

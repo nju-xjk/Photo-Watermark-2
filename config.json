@@ -10,9 +10,9 @@
                 255,
                 255
             ],
-            "position_mode": "relative",
-            "offset_x": 0.5,
-            "offset_y": 0.5
+            "position_mode": "bottom-right",
+            "offset_x": 0,
+            "offset_y": 0
         }
     },
     "selected_template": "Default"
