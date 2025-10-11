@@ -98,6 +98,24 @@ class MainWindow:
                             ('pressed', '#adb5bd'),
                             ('!active', '#dee2e6')])
         
+        # Selected button style for position grid
+        style.configure('Selected.TButton',
+                       padding=(10, 8),
+                       font=('Segoe UI', 9, 'bold'),
+                       relief='flat',
+                       borderwidth=1)
+        
+        style.map('Selected.TButton',
+                 background=[('active', '#dbeafe'), # light blue
+                           ('pressed', '#bfdbfe'),
+                           ('!active', '#dbeafe')],
+                 foreground=[('active', '#1e3a8a'),
+                           ('pressed', '#1e3a8a'),
+                           ('!active', '#1e3a8a')],
+                 bordercolor=[('active', '#93c5fd'),
+                            ('pressed', '#60a5fa'),
+                            ('!active', '#93c5fd')])
+        
         # Configure modern frame style
         style.configure('Card.TFrame',
                        background='white',
@@ -261,6 +279,7 @@ class MainWindow:
                      "mid-left", "mid-center", "mid-right",
                      "bottom-left", "bottom-center", "bottom-right"]
         
+        self.position_buttons = {}
         for i, pos in enumerate(positions):
             btn = ttk.Button(pos_grid_frame, text=pos.replace("-", "\n"), 
                           command=lambda p=pos: self.set_watermark_position(p), 
@@ -268,10 +287,14 @@ class MainWindow:
                           width=8)
             btn.grid(row=i//3, column=i%3, sticky="nsew", padx=2, pady=2)
             pos_grid_frame.grid_columnconfigure(i%3, weight=1)
+            self.position_buttons[pos] = btn
         
         pos_grid_frame.grid_rowconfigure(0, weight=1)
         pos_grid_frame.grid_rowconfigure(1, weight=1)
         pos_grid_frame.grid_rowconfigure(2, weight=1)
+        
+        # Initialize grid selection visual state
+        self.update_position_grid_selection(getattr(self, 'watermark_position_mode', 'bottom-right'))
 
     def create_export_controls(self):
         """Creates export settings including naming rules and format/quality."""
@@ -526,6 +549,8 @@ class MainWindow:
             self.watermark_offset["y"] = actual_pos[1]
         
         self.watermark_position_mode = "manual" # Switch to manual positioning
+        # Clear nine-grid selection when switching to manual mode
+        self.update_position_grid_selection(None)
 
     def on_drag_motion(self, event):
         """Handles the dragging motion."""
@@ -546,6 +571,8 @@ class MainWindow:
         """Sets the watermark position and updates the preview."""
         self.watermark_position_mode = position
         self.watermark_offset = {"x": 0, "y": 0} # Reset offset when using presets
+        # Update nine-grid visual selection
+        self.update_position_grid_selection(position)
         self.preview_watermark()
 
     def choose_color_and_preview(self):
@@ -631,6 +658,8 @@ class MainWindow:
         self.save_current_image_state() # Save state of the previous image
         self.current_image_path = path
         self.load_image_state(path) # Load state for the new image
+        # Sync nine-grid visual selection with the loaded state
+        self.update_position_grid_selection(self.watermark_position_mode)
         try:
             self.original_image = self.image_processor.load_image(path)
             if self.original_image is None: return
@@ -771,3 +800,17 @@ class MainWindow:
             # Update the thumbnail list
             self.update_thumbnail_list()
             print(f"Removed image: {os.path.basename(image_path)}")
+
+
+    def update_position_grid_selection(self, selected_pos):
+        """Updates the visual selection state of the nine-grid position buttons.
+        If selected_pos is one of the predefined positions, highlight that button;
+        otherwise, clear all selections."""
+        positions = {"top-left", "top-center", "top-right",
+                     "mid-left", "mid-center", "mid-right",
+                     "bottom-left", "bottom-center", "bottom-right"}
+        for pos, btn in getattr(self, 'position_buttons', {}).items():
+            if selected_pos in positions and pos == selected_pos:
+                btn.config(style='Selected.TButton')
+            else:
+                btn.config(style='Secondary.TButton')
