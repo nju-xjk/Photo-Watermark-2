@@ -113,5 +113,16 @@ Photo-Watermark-2-2/
   - 当仓库推送版本标签（例如 v2.0.1、v2.1.0）时，GitHub Actions 会自动创建 Release 并上传上述资产。
   - 工作流文件位置：.github/workflows/release.yml。
 
+## 截图（Screenshots）
+下面展示两个界面状态：
+
+- 初始界面（Initial UI）：
+
+  ![Initial UI](assets/screenshots/initial.png)
+
+- 工作中界面（Working UI）：
+
+  ![Working UI](assets/screenshots/working.png)
+
 ## 许可证
 未设置许可证。如需开放源代码协议，请在项目根目录添加 LICENSE 并在此处补充说明。
