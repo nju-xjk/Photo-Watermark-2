@@ -452,9 +452,15 @@ class MainWindow:
         size_row.pack(fill=tk.X)
         ttk.Label(size_row, text="Font Size:").pack(side=tk.LEFT)
         size_var = tk.IntVar(value=self.font_size.get())
-        ttk.Spinbox(size_row, from_=1, to=500, textvariable=size_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
+        size_spin = ttk.Spinbox(size_row, from_=1, to=500, textvariable=size_var, width=8)
+        size_spin.pack(side=tk.LEFT, padx=(5, 10))
         auto_var = tk.BooleanVar(value=False)
         ttk.Checkbutton(size_row, text="Auto font size", variable=auto_var).pack(side=tk.LEFT)
+        # Disable font size input when auto is selected
+        def _toggle_size_spin_save(*args):
+            size_spin.configure(state='disabled' if auto_var.get() else 'normal')
+        auto_var.trace_add('write', _toggle_size_spin_save)
+        _toggle_size_spin_save()
 
         opacity_row = ttk.Frame(container)
         opacity_row.pack(fill=tk.X, pady=(10, 0))
@@ -531,7 +537,8 @@ class MainWindow:
                 dlg.destroy()
             except Exception as e:
                 messagebox.showerror("Save Template", f"Failed to save template: {e}", parent=dlg)
-        ttk.Button(btns, text="Save", command=do_save, style='Primary.TButton').pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
+        # Make Save button style same as Cancel
+        ttk.Button(btns, text="Save", command=do_save, style='Secondary.TButton').pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
         ttk.Button(btns, text="Cancel", command=dlg.destroy, style='Secondary.TButton').pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
 
     def manage_templates(self):
@@ -571,9 +578,15 @@ class MainWindow:
         size_row.pack(fill=tk.X)
         ttk.Label(size_row, text="Font Size:").pack(side=tk.LEFT)
         size_var = tk.IntVar()
-        ttk.Spinbox(size_row, from_=1, to=500, textvariable=size_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
+        size_spin_m = ttk.Spinbox(size_row, from_=1, to=500, textvariable=size_var, width=8)
+        size_spin_m.pack(side=tk.LEFT, padx=(5, 10))
         auto_var = tk.BooleanVar()
         ttk.Checkbutton(size_row, text="Auto font size", variable=auto_var).pack(side=tk.LEFT)
+        # Disable font size input when auto is selected
+        def _toggle_size_spin_manage(*args):
+            size_spin_m.configure(state='disabled' if auto_var.get() else 'normal')
+        auto_var.trace_add('write', _toggle_size_spin_manage)
+        _toggle_size_spin_manage()
 
         opacity_row = ttk.Frame(right)
         opacity_row.pack(fill=tk.X, pady=(10, 0))
@@ -657,7 +670,7 @@ class MainWindow:
                 clear_fields()
             except Exception as e:
                 messagebox.showerror("Manage Templates", f"Failed to delete template: {e}", parent=dlg)
-        ttk.Button(btns, text="Save Changes", command=do_update, style='Primary.TButton').pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
+        ttk.Button(btns, text="Save Changes", command=do_update, style='Secondary.TButton').pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
         ttk.Button(btns, text="Delete", command=do_delete, style='Secondary.TButton').pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
 
         def clear_fields():
@@ -714,9 +727,6 @@ class MainWindow:
             listbox.select_set(0)
             load_selected()
 
-        close_row = ttk.Frame(container)
-        close_row.pack(fill=tk.X, pady=(10,0))
-        ttk.Button(close_row, text="Close", command=dlg.destroy, style='Secondary.TButton').pack(side=tk.RIGHT)
 
     def center_window(self, win, width=400, height=300):
         try:
