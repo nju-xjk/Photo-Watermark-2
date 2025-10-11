@@ -663,10 +663,15 @@ class MainWindow:
                 text_container.pack(side=tk.LEFT, padx=(0, 8), pady=8)
                 text_container.pack_propagate(False)
 
-                filename_label = tk.Label(text_container, text=os.path.basename(path), 
+                # Format filename: insert newline after every 15 characters for controlled wrapping
+                base_name = os.path.basename(path)
+                display_name = '\n'.join([base_name[i:i+15] for i in range(0, len(base_name), 15)])
+
+                filename_label = tk.Label(text_container, text=display_name, 
                                         wraplength=150, font=('Segoe UI', 9), 
-                                        bg='white', fg='#212529', justify='left', anchor='nw')
-                filename_label.pack(fill=tk.BOTH, expand=True)
+                                        bg='white', fg='#212529', justify='center', anchor='center')
+                # Add extra right padding to visually shift content slightly left
+                filename_label.pack(fill=tk.BOTH, expand=True, padx=(0, 10))
                 filename_label.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
                 filename_label.bind("<Button-3>", lambda e, p=path: self.show_context_menu(e, p))  # Right-click for context menu
                 text_container.bind("<Button-1>", lambda e, p=path: self.on_image_select(p))
