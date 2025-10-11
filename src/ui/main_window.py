@@ -284,7 +284,8 @@ class MainWindow:
             btn = ttk.Button(pos_grid_frame, text=pos.replace("-", "\n"), 
                           command=lambda p=pos: self.set_watermark_position(p), 
                           style='Secondary.TButton',
-                          width=8)
+                          width=8,
+                          takefocus=False)
             btn.grid(row=i//3, column=i%3, sticky="nsew", padx=2, pady=2)
             pos_grid_frame.grid_columnconfigure(i%3, weight=1)
             self.position_buttons[pos] = btn
@@ -295,6 +296,8 @@ class MainWindow:
         
         # Initialize grid selection visual state
         self.update_position_grid_selection(getattr(self, 'watermark_position_mode', 'bottom-right'))
+        # Ensure no focus ring remains on any position button initially
+        self.clear_position_grid_focus()
 
     def create_export_controls(self):
         """Creates export settings including naming rules and format/quality."""
@@ -573,6 +576,8 @@ class MainWindow:
         self.watermark_offset = {"x": 0, "y": 0} # Reset offset when using presets
         # Update nine-grid visual selection
         self.update_position_grid_selection(position)
+        # Remove focus ring to avoid dotted outline sticking around
+        self.clear_position_grid_focus()
         self.preview_watermark()
 
     def choose_color_and_preview(self):
@@ -660,6 +665,8 @@ class MainWindow:
         self.load_image_state(path) # Load state for the new image
         # Sync nine-grid visual selection with the loaded state
         self.update_position_grid_selection(self.watermark_position_mode)
+        # Clear any lingering focus ring from previous button
+        self.clear_position_grid_focus()
         try:
             self.original_image = self.image_processor.load_image(path)
             if self.original_image is None: return
@@ -814,3 +821,14 @@ class MainWindow:
                 btn.config(style='Selected.TButton')
             else:
                 btn.config(style='Secondary.TButton')
+
+    def clear_position_grid_focus(self):
+        """Move focus away from position buttons to avoid the dotted focus ring persisting."""
+        try:
+            # Prefer focusing the main image label if available, else focus root
+            if getattr(self, 'image_label', None):
+                self.image_label.focus_set()
+            else:
+                self.root.focus_set()
+        except Exception:
+            pass
