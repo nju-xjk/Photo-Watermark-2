@@ -23,6 +23,12 @@ class MainWindow:
 
         self.image_processor = ImageProcessor()
         self.config_manager = ConfigManager()
+        # Ensure default template exists and force selection to Default on startup
+        try:
+            self.config_manager.ensure_default_template()
+            self.config_manager.set_selected_template('Default')
+        except Exception as e:
+            print(f"Error initializing templates: {e}")
         self.filepaths = []
         self.tk_thumbnails = []
         self.current_image_path = None
@@ -41,6 +47,11 @@ class MainWindow:
         self.export_quality = tk.IntVar(value=95)
 
         self.create_widgets()
+        # Apply the selected (Default) template at startup
+        try:
+            self.apply_template_by_name(self.config_manager.get_selected_template_name())
+        except Exception as e:
+            print(f"Error applying default template: {e}")
 
         self.root.drop_target_register(DND_FILES)
         self.root.dnd_bind('<<Drop>>', self.on_drop)
@@ -211,18 +222,26 @@ class MainWindow:
         self.create_export_controls()
 
     def create_template_controls(self):
-        """Creates the widgets for saving and loading templates."""
+        """Creates the widgets for template selection and management."""
         template_frame = ttk.LabelFrame(self.control_panel, text="💾 Watermark Templates", style='Modern.TLabelframe')
         template_frame.pack(fill=tk.X, padx=15, pady=(15, 10))
 
-        button_frame = ttk.Frame(template_frame)
-        button_frame.pack(fill=tk.X, padx=10, pady=10)
+        inner = ttk.Frame(template_frame)
+        inner.pack(fill=tk.X, padx=10, pady=10)
 
-        save_button = ttk.Button(button_frame, text="💾 Save Template", command=self.save_template, style='Secondary.TButton')
-        save_button.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
+        ttk.Label(inner, text="Template:", font=('Segoe UI', 9, 'bold')).pack(anchor="w")
+        self.template_names = self.config_manager.list_templates()
+        self.selected_template_var = tk.StringVar(value=self.config_manager.get_selected_template_name())
+        self.template_combo = ttk.Combobox(inner, textvariable=self.selected_template_var, values=self.template_names, state="readonly")
+        self.template_combo.pack(fill=tk.X, pady=(5, 10))
+        self.template_combo.bind("<<ComboboxSelected>>", self.on_template_selected)
 
-        load_button = ttk.Button(button_frame, text="📂 Load Template", command=self.load_template, style='Secondary.TButton')
-        load_button.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
+        btn_row = ttk.Frame(inner)
+        btn_row.pack(fill=tk.X)
+        save_btn = ttk.Button(btn_row, text="💾 Save Template", command=self.save_template, style='Secondary.TButton')
+        save_btn.pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
+        manage_btn = ttk.Button(btn_row, text="⚙️ Manage Templates", command=self.manage_templates, style='Secondary.TButton')
+        manage_btn.pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
 
     def create_watermark_controls(self):
         """Creates the widgets for the watermark control panel."""
@@ -360,53 +379,359 @@ class MainWindow:
         ttk.Spinbox(fmt_row, from_=1, to=100, textvariable=self.export_quality, width=6).pack(side=tk.LEFT, padx=(5,0))
 
 
-    def save_template(self):
-        """Saves the current watermark settings to a template file."""
-        settings = {
-            "text": self.watermark_text.get(),
-            "font_size": self.font_size.get(),
-            "opacity": self.opacity.get(),
-            "color": self.watermark_color,
-            "position_mode": self.watermark_position_mode,
-            "offset_x": self.watermark_offset["x"],
-            "offset_y": self.watermark_offset["y"],
-        }
-        filepath = filedialog.asksaveasfilename(
-            title="Save Watermark Template",
-            defaultextension=".json",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
-        if filepath:
-            self.config_manager.save_watermark_template(settings, filepath)
-            print(f"Template saved to {filepath}")
+    def on_template_selected(self, event=None):
+        name = self.selected_template_var.get()
+        self.apply_template_by_name(name)
 
-    def load_template(self):
-        """Loads watermark settings from a template file."""
-        filepath = filedialog.askopenfilename(
-            title="Load Watermark Template",
-            filetypes=[("JSON files", "*.json"), ("All files", "*.*")]
-        )
-        if filepath:
-            settings = self.config_manager.load_watermark_template(filepath)
-            if settings:
-                self.watermark_text.set(settings.get("text", ""))
-                self.font_size.set(settings.get("font_size", 40))
-                # migrate opacity from 0-255 to 0-100 if needed
-                opacity_val = settings.get("opacity", 50)
-                if isinstance(opacity_val, (int, float)):
-                    if opacity_val > 100:
-                        opacity_percent = max(0, min(100, int(round(opacity_val * 100 / 255))))
-                    else:
-                        opacity_percent = max(0, min(100, int(opacity_val)))
-                    self.opacity.set(opacity_percent)
+    def apply_template_by_name(self, name):
+        tmpl = self.config_manager.get_template(name)
+        if not tmpl:
+            return
+        # Persist selection
+        self.config_manager.set_selected_template(name)
+        # Apply settings
+        self.apply_template_settings(tmpl)
+
+    def apply_template_settings(self, settings):
+        try:
+            self.watermark_text.set(settings.get("text", "Your Watermark"))
+            # Handle auto font size
+            auto = bool(settings.get("font_size_auto", False))
+            if auto and self.original_image is not None:
+                img_w, img_h = self.original_image.size
+                base = min(img_w, img_h)
+                estimated = max(14, int(base * 0.05))
+                self.font_size.set(estimated)
+            else:
+                self.font_size.set(int(settings.get("font_size", 40)))
+            # Opacity (percent)
+            opacity_val = settings.get("opacity", 50)
+            if isinstance(opacity_val, (int, float)):
+                if opacity_val > 100:
+                    opacity_percent = max(0, min(100, int(round(opacity_val * 100 / 255))))
                 else:
-                    self.opacity.set(50)
-                self.watermark_color = tuple(settings.get("color", (255, 255, 255)))
-                self.watermark_position_mode = settings.get("position_mode", "bottom-right")
-                self.watermark_offset["x"] = settings.get("offset_x", 0)
-                self.watermark_offset["y"] = settings.get("offset_y", 0)
-                self.preview_watermark()
-                print(f"Template loaded from {filepath}")
+                    opacity_percent = max(0, min(100, int(opacity_val)))
+                self.opacity.set(opacity_percent)
+            else:
+                self.opacity.set(50)
+            # Color
+            color_val = settings.get("color", [255, 255, 255])
+            self.watermark_color = tuple(color_val)
+            # Position
+            self.watermark_position_mode = settings.get("position_mode", "bottom-right")
+            self.watermark_offset["x"] = settings.get("offset_x", 0)
+            self.watermark_offset["y"] = settings.get("offset_y", 0)
+            # Sync grid selection and preview
+            self.update_position_grid_selection(self.watermark_position_mode)
+            self.clear_position_grid_focus()
+            self.preview_watermark()
+        except Exception as e:
+            print(f"Error applying template settings: {e}")
+
+    def save_template(self):
+        """Open a dialog to save current settings as a new template (excluding Default)."""
+        dlg = tk.Toplevel(self.root)
+        dlg.title("Save Template")
+        dlg.transient(self.root)
+        dlg.grab_set()
+        # Center the dialog
+        self.center_window(dlg, width=420, height=400)
+
+        container = ttk.Frame(dlg, padding=15)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        ttk.Label(container, text="Template Name:", font=('Segoe UI', 9, 'bold')).pack(anchor='w')
+        name_var = tk.StringVar(value="New Template")
+        ttk.Entry(container, textvariable=name_var).pack(fill=tk.X, pady=(5, 10))
+
+        ttk.Label(container, text="Text:").pack(anchor='w')
+        text_var = tk.StringVar(value=self.watermark_text.get())
+        ttk.Entry(container, textvariable=text_var).pack(fill=tk.X, pady=(5, 10))
+
+        size_row = ttk.Frame(container)
+        size_row.pack(fill=tk.X)
+        ttk.Label(size_row, text="Font Size:").pack(side=tk.LEFT)
+        size_var = tk.IntVar(value=self.font_size.get())
+        ttk.Spinbox(size_row, from_=1, to=500, textvariable=size_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
+        auto_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(size_row, text="Auto font size", variable=auto_var).pack(side=tk.LEFT)
+
+        opacity_row = ttk.Frame(container)
+        opacity_row.pack(fill=tk.X, pady=(10, 0))
+        ttk.Label(opacity_row, text="Opacity (0-100):").pack(side=tk.LEFT)
+        opacity_var = tk.IntVar(value=self.opacity.get())
+        ttk.Spinbox(opacity_row, from_=0, to=100, textvariable=opacity_var, width=6).pack(side=tk.LEFT, padx=(5, 10))
+
+        color_row = ttk.Frame(container)
+        color_row.pack(fill=tk.X, pady=(10, 0))
+        ttk.Label(color_row, text="Color:").pack(side=tk.LEFT)
+        color_preview = tk.Label(color_row, text=" ", bg=self.rgb_to_hex(self.watermark_color), width=2, relief='solid')
+        color_preview.pack(side=tk.LEFT, padx=(5, 8))
+        def pick_color():
+            code = colorchooser.askcolor(title="Choose color")
+            if code and code[0]:
+                rgb = tuple(int(c) for c in code[0])
+                color_preview.configure(bg=self.rgb_to_hex(rgb))
+                color_selected_var.set(json.dumps(rgb))
+        color_selected_var = tk.StringVar(value=json.dumps(self.watermark_color))
+        ttk.Button(color_row, text="Choose...", command=pick_color, style='Secondary.TButton').pack(side=tk.LEFT)
+
+        pos_row = ttk.Frame(container)
+        pos_row.pack(fill=tk.X, pady=(10, 0))
+        ttk.Label(pos_row, text="Position:").pack(side=tk.LEFT)
+        positions = [
+            "top-left", "top-center", "top-right",
+            "mid-left", "mid-center", "mid-right",
+            "bottom-left", "bottom-center", "bottom-right",
+            "manual"
+        ]
+        pos_var = tk.StringVar(value=self.watermark_position_mode)
+        ttk.Combobox(pos_row, textvariable=pos_var, values=positions, state='readonly', width=15).pack(side=tk.LEFT, padx=(5, 10))
+
+        offset_row = ttk.Frame(container)
+        offset_row.pack(fill=tk.X, pady=(10, 0))
+        ttk.Label(offset_row, text="Offset X:").pack(side=tk.LEFT)
+        offx_var = tk.DoubleVar(value=self.watermark_offset.get('x', 0))
+        ttk.Entry(offset_row, textvariable=offx_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
+        ttk.Label(offset_row, text="Offset Y:").pack(side=tk.LEFT)
+        offy_var = tk.DoubleVar(value=self.watermark_offset.get('y', 0))
+        ttk.Entry(offset_row, textvariable=offy_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
+
+        btns = ttk.Frame(container)
+        btns.pack(fill=tk.X, pady=(15, 0))
+        def do_save():
+            name = name_var.get().strip()
+            if not name:
+                messagebox.showerror("Save Template", "Template name cannot be empty.", parent=dlg)
+                return
+            if name == 'Default':
+                messagebox.showerror("Save Template", "Default template cannot be modified.", parent=dlg)
+                return
+            # Parse color
+            try:
+                color_rgb = tuple(json.loads(color_selected_var.get()))
+            except Exception:
+                color_rgb = self.watermark_color
+            tmpl = {
+                "text": text_var.get(),
+                "font_size": int(size_var.get()),
+                "font_size_auto": bool(auto_var.get()),
+                "opacity": int(opacity_var.get()),
+                "color": list(color_rgb),
+                "position_mode": pos_var.get(),
+                "offset_x": float(offx_var.get()),
+                "offset_y": float(offy_var.get()),
+            }
+            try:
+                self.config_manager.add_template(name, tmpl)
+                # Refresh dropdown
+                self.template_names = self.config_manager.list_templates()
+                self.template_combo.configure(values=self.template_names)
+                messagebox.showinfo("Save Template", "Template saved successfully.", parent=dlg)
+                dlg.destroy()
+            except Exception as e:
+                messagebox.showerror("Save Template", f"Failed to save template: {e}", parent=dlg)
+        ttk.Button(btns, text="Save", command=do_save, style='Primary.TButton').pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
+        ttk.Button(btns, text="Cancel", command=dlg.destroy, style='Secondary.TButton').pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
+
+    def manage_templates(self):
+        """Open a dialog to edit or delete templates (Default is protected)."""
+        dlg = tk.Toplevel(self.root)
+        dlg.title("Manage Templates")
+        dlg.transient(self.root)
+        dlg.grab_set()
+        self.center_window(dlg, width=520, height=520)
+
+        container = ttk.Frame(dlg, padding=15)
+        container.pack(fill=tk.BOTH, expand=True)
+
+        left = ttk.Frame(container)
+        left.pack(side=tk.LEFT, fill=tk.Y)
+        ttk.Label(left, text="Templates:", font=('Segoe UI', 9, 'bold')).pack(anchor='w')
+        listbox = tk.Listbox(left, height=20)
+        listbox.pack(fill=tk.Y, expand=True, pady=(5,0))
+        for name in self.config_manager.list_templates():
+            listbox.insert(tk.END, name)
+
+        right = ttk.Frame(container)
+        right.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(15,0))
+        ttk.Label(right, text="Details:", font=('Segoe UI', 9, 'bold')).pack(anchor='w')
+
+        # Fields
+        name_var = tk.StringVar()
+        ttk.Label(right, text="Name:").pack(anchor='w')
+        name_entry = ttk.Entry(right, textvariable=name_var)
+        name_entry.pack(fill=tk.X, pady=(5, 8))
+
+        text_var = tk.StringVar()
+        ttk.Label(right, text="Text:").pack(anchor='w')
+        ttk.Entry(right, textvariable=text_var).pack(fill=tk.X, pady=(5, 8))
+
+        size_row = ttk.Frame(right)
+        size_row.pack(fill=tk.X)
+        ttk.Label(size_row, text="Font Size:").pack(side=tk.LEFT)
+        size_var = tk.IntVar()
+        ttk.Spinbox(size_row, from_=1, to=500, textvariable=size_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
+        auto_var = tk.BooleanVar()
+        ttk.Checkbutton(size_row, text="Auto font size", variable=auto_var).pack(side=tk.LEFT)
+
+        opacity_row = ttk.Frame(right)
+        opacity_row.pack(fill=tk.X, pady=(10, 0))
+        ttk.Label(opacity_row, text="Opacity (0-100):").pack(side=tk.LEFT)
+        opacity_var = tk.IntVar()
+        ttk.Spinbox(opacity_row, from_=0, to=100, textvariable=opacity_var, width=6).pack(side=tk.LEFT, padx=(5, 10))
+
+        color_row = ttk.Frame(right)
+        color_row.pack(fill=tk.X, pady=(10, 0))
+        ttk.Label(color_row, text="Color:").pack(side=tk.LEFT)
+        color_preview = tk.Label(color_row, text=" ", bg=self.rgb_to_hex((255,255,255)), width=2, relief='solid')
+        color_preview.pack(side=tk.LEFT, padx=(5, 8))
+        color_selected_var = tk.StringVar(value=json.dumps([255,255,255]))
+        def pick_color_manage():
+            code = colorchooser.askcolor(title="Choose color")
+            if code and code[0]:
+                rgb = tuple(int(c) for c in code[0])
+                color_preview.configure(bg=self.rgb_to_hex(rgb))
+                color_selected_var.set(json.dumps(rgb))
+        ttk.Button(color_row, text="Choose...", command=pick_color_manage, style='Secondary.TButton').pack(side=tk.LEFT)
+
+        pos_row = ttk.Frame(right)
+        pos_row.pack(fill=tk.X, pady=(10, 0))
+        ttk.Label(pos_row, text="Position:").pack(side=tk.LEFT)
+        positions = [
+            "top-left", "top-center", "top-right",
+            "mid-left", "mid-center", "mid-right",
+            "bottom-left", "bottom-center", "bottom-right",
+            "manual"
+        ]
+        pos_var = tk.StringVar()
+        ttk.Combobox(pos_row, textvariable=pos_var, values=positions, state='readonly', width=15).pack(side=tk.LEFT, padx=(5, 10))
+
+        offset_row = ttk.Frame(right)
+        offset_row.pack(fill=tk.X, pady=(10, 0))
+        ttk.Label(offset_row, text="Offset X:").pack(side=tk.LEFT)
+        offx_var = tk.DoubleVar()
+        ttk.Entry(offset_row, textvariable=offx_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
+        ttk.Label(offset_row, text="Offset Y:").pack(side=tk.LEFT)
+        offy_var = tk.DoubleVar()
+        ttk.Entry(offset_row, textvariable=offy_var, width=8).pack(side=tk.LEFT, padx=(5, 10))
+
+        # Buttons
+        btns = ttk.Frame(right)
+        btns.pack(fill=tk.X, pady=(15, 0))
+        def do_update():
+            name = name_var.get().strip()
+            if name == 'Default':
+                messagebox.showerror("Manage Templates", "Default template cannot be modified.", parent=dlg)
+                return
+            try:
+                color_rgb = tuple(json.loads(color_selected_var.get()))
+            except Exception:
+                color_rgb = (255,255,255)
+            tmpl = {
+                "text": text_var.get(),
+                "font_size": int(size_var.get()),
+                "font_size_auto": bool(auto_var.get()),
+                "opacity": int(opacity_var.get()),
+                "color": list(color_rgb),
+                "position_mode": pos_var.get(),
+                "offset_x": float(offx_var.get()),
+                "offset_y": float(offy_var.get()),
+            }
+            try:
+                self.config_manager.update_template(name, tmpl)
+                messagebox.showinfo("Manage Templates", "Template updated successfully.", parent=dlg)
+                # Refresh list and dropdown
+                refresh_templates()
+            except Exception as e:
+                messagebox.showerror("Manage Templates", f"Failed to update template: {e}", parent=dlg)
+        def do_delete():
+            name = name_var.get().strip()
+            if name == 'Default':
+                messagebox.showerror("Manage Templates", "Default template cannot be deleted.", parent=dlg)
+                return
+            try:
+                self.config_manager.delete_template(name)
+                messagebox.showinfo("Manage Templates", "Template deleted successfully.", parent=dlg)
+                refresh_templates()
+                clear_fields()
+            except Exception as e:
+                messagebox.showerror("Manage Templates", f"Failed to delete template: {e}", parent=dlg)
+        ttk.Button(btns, text="Save Changes", command=do_update, style='Primary.TButton').pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
+        ttk.Button(btns, text="Delete", command=do_delete, style='Secondary.TButton').pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
+
+        def clear_fields():
+            name_var.set("")
+            text_var.set("")
+            size_var.set(40)
+            auto_var.set(False)
+            opacity_var.set(50)
+            color_selected_var.set(json.dumps([255,255,255]))
+            color_preview.configure(bg=self.rgb_to_hex((255,255,255)))
+            pos_var.set("bottom-right")
+            offx_var.set(0)
+            offy_var.set(0)
+
+        def load_selected(evt=None):
+            sel = listbox.curselection()
+            if not sel:
+                clear_fields()
+                return
+            name = listbox.get(sel[0])
+            tmpl = self.config_manager.get_template(name)
+            if not tmpl:
+                clear_fields()
+                return
+            name_var.set(name)
+            text_var.set(tmpl.get('text', ''))
+            size_var.set(int(tmpl.get('font_size', 40)))
+            auto_var.set(bool(tmpl.get('font_size_auto', False)))
+            opacity_var.set(int(tmpl.get('opacity', 50)))
+            color = tuple(tmpl.get('color', [255,255,255]))
+            color_selected_var.set(json.dumps(list(color)))
+            color_preview.configure(bg=self.rgb_to_hex(color))
+            pos_var.set(tmpl.get('position_mode', 'bottom-right'))
+            offx_var.set(float(tmpl.get('offset_x', 0)))
+            offy_var.set(float(tmpl.get('offset_y', 0)))
+            # Protect Default in UI by disabling entries
+            readonly = (name == 'Default')
+            name_entry.configure(state='readonly' if readonly else 'normal')
+        
+        def refresh_templates():
+            listbox.delete(0, tk.END)
+            for n in self.config_manager.list_templates():
+                listbox.insert(tk.END, n)
+            # Update main dropdown as well
+            self.template_names = self.config_manager.list_templates()
+            self.template_combo.configure(values=self.template_names)
+            # Keep current selection if exists
+            current = self.config_manager.get_selected_template_name()
+            self.selected_template_var.set(current)
+        
+        listbox.bind('<<ListboxSelect>>', load_selected)
+        # Initially select the first item
+        if listbox.size() > 0:
+            listbox.select_set(0)
+            load_selected()
+
+        close_row = ttk.Frame(container)
+        close_row.pack(fill=tk.X, pady=(10,0))
+        ttk.Button(close_row, text="Close", command=dlg.destroy, style='Secondary.TButton').pack(side=tk.RIGHT)
+
+    def center_window(self, win, width=400, height=300):
+        try:
+            win.update_idletasks()
+            sw = win.winfo_screenwidth()
+            sh = win.winfo_screenheight()
+            x = int((sw/2) - (width/2))
+            y = int((sh/2) - (height/2))
+            win.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            pass
+
+    def rgb_to_hex(self, rgb):
+        r, g, b = rgb
+        return f"#{r:02x}{g:02x}{b:02x}"
 
     def export_images(self):
         """Exports all imported images with the current watermark settings."""
