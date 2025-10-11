@@ -376,19 +376,38 @@ class MainWindow:
         if not output_dir:
             return
 
-        # Build watermark using current settings (opacity percent -> alpha 0-255)
-        alpha = int(max(0, min(100, self.opacity.get())) * 255 / 100)
-        watermark = Watermark(
-            text=self.watermark_text.get(),
-            font_size=self.font_size.get(),
-            color=self.watermark_color + (alpha,),
-            position=(self.watermark_position_mode, self.watermark_offset)
-        )
-
         for path in self.filepaths:
             try:
                 original_image = self.image_processor.load_image(path)
                 if original_image is None: continue
+
+                # Build watermark from per-image state if available; otherwise use current settings
+                state = self.image_states.get(path) if hasattr(self, 'image_states') else None
+                if state:
+                    text = state.get("text", self.watermark_text.get())
+                    font_size = state.get("font_size", self.font_size.get())
+                    opacity_val = state.get("opacity", self.opacity.get())
+                    if isinstance(opacity_val, (int, float)) and opacity_val > 100:
+                        alpha = int(max(0, min(255, int(opacity_val))))
+                    else:
+                        alpha = int(max(0, min(100, int(opacity_val))) * 255 / 100)
+                    color_rgb = tuple(state.get("color", self.watermark_color))
+                    position_mode = state.get("position_mode", self.watermark_position_mode)
+                    offset = {"x": state.get("offset_x", self.watermark_offset.get("x", 0)), "y": state.get("offset_y", self.watermark_offset.get("y", 0))}
+                else:
+                    text = self.watermark_text.get()
+                    font_size = self.font_size.get()
+                    alpha = int(max(0, min(100, self.opacity.get())) * 255 / 100)
+                    color_rgb = self.watermark_color
+                    position_mode = self.watermark_position_mode
+                    offset = self.watermark_offset
+
+                watermark = Watermark(
+                    text=text,
+                    font_size=font_size,
+                    color=color_rgb + (alpha,),
+                    position=(position_mode, offset)
+                )
 
                 watermarked_image = self.image_processor.apply_watermark(original_image, watermark)
 
