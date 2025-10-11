@@ -106,12 +106,12 @@ class MainWindow:
                        borderwidth=1)
         
         style.map('Selected.TButton',
-                 background=[('active', '#60a5fa'), # more saturated blue
+                 background=[('active', '#60a5fa'),
                            ('pressed', '#3b82f6'),
                            ('!active', '#93c5fd')],
-                 foreground=[('active', 'white'),
-                           ('pressed', 'white'),
-                           ('!active', 'white')],
+                 foreground=[('active', '#1e3a8a'),
+                           ('pressed', '#1e3a8a'),
+                           ('!active', '#1e3a8a')],
                  bordercolor=[('active', '#60a5fa'),
                             ('pressed', '#3b82f6'),
                             ('!active', '#60a5fa')])
