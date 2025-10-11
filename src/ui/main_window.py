@@ -425,13 +425,25 @@ class MainWindow:
             print("No image in preview to export.")
             return
 
-        output_path = filedialog.asksaveasfilename(
-            title="Save As",
-            defaultextension=f".{self.export_format.get().lower()}",
-            filetypes=[(f"{self.export_format.get()} files", f"*.{self.export_format.get().lower()}"), ("All files", "*.*")]
-        )
-        if not output_path:
+        output_dir = filedialog.askdirectory(title="Select Output Folder")
+        if not output_dir:
             return
+
+        # Determine output filename based on naming rule and enforce extension by selected format
+        base_filename = os.path.basename(self.current_image_path)
+        name = os.path.splitext(base_filename)[0]
+        rule = self.naming_rule.get() if hasattr(self, 'naming_rule') else 'original'
+        prefix = self.export_prefix.get() if hasattr(self, 'export_prefix') else ''
+        suffix = self.export_suffix.get() if hasattr(self, 'export_suffix') else ''
+        fmt = (self.export_format.get() or 'JPEG').upper()
+        output_ext = '.jpg' if fmt == 'JPEG' else '.png'
+        if rule == 'prefix':
+            new_name = f"{prefix}{name}{output_ext}"
+        elif rule == 'suffix':
+            new_name = f"{name}{suffix}{output_ext}"
+        else:
+            new_name = f"{name}{output_ext}"
+        output_path = os.path.join(output_dir, new_name)
 
         alpha = int(max(0, min(100, self.opacity.get())) * 255 / 100)
         watermark = Watermark(
@@ -446,7 +458,7 @@ class MainWindow:
             self.image_processor.save_image(
                 watermarked_image,
                 output_path,
-                self.export_format.get(),
+                fmt,
                 self.export_quality.get()
             )
             print(f"Successfully exported {output_path}")
