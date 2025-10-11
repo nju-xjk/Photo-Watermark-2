@@ -99,5 +99,19 @@ Photo-Watermark-2-2/
 - 导出 JPEG 透明背景：JPEG 不支持透明，程序会自动以白色背景合成；如需透明请导出 PNG
 - 默认模板不可修改/删除：这是设计行为，用于保证应用始终有一个可用模板
 
+## 发布与下载
+- GitHub Releases 提供两种下载方式：
+  - 一体化（onefile）EXE：下载后直接双击运行，无需解压或安装（文件名示例：PhotoWatermark2-onefile-win-x64.exe）。
+  - 免安装文件夹版（zip）：解压后进入文件夹，双击 PhotoWatermark2.exe 运行（文件名示例：PhotoWatermark2-win-x64.zip）。
+
+- 运行提示：
+  - 首次启动 onefile EXE 可能略慢，因为会将内置资源解压到临时目录；后续启动会更快。
+  - Windows SmartScreen 可能提示“已阻止不常见应用”，请点击“更多信息”→“仍要运行”。
+  - 配置文件 config.json 默认写入程序所在目录。请将 EXE 或解压后的文件夹放在具有写入权限的位置（如用户目录），以正常保存模板与设置。
+
+- 发布与自动化：
+  - 当仓库推送版本标签（例如 v2.0.1、v2.1.0）时，GitHub Actions 会自动创建 Release 并上传上述资产。
+  - 工作流文件位置：.github/workflows/release.yml。
+
 ## 许可证
 未设置许可证。如需开放源代码协议，请在项目根目录添加 LICENSE 并在此处补充说明。
