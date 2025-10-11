@@ -429,6 +429,8 @@ class MainWindow:
                 messagebox.showerror("Invalid Output Folder", "To prevent overwriting originals, exporting to the source folder is not allowed. Please choose a different folder.")
                 continue
             break
+        success_count = 0
+        failure_count = 0
         for path in self.filepaths:
             try:
                 original_image = self.image_processor.load_image(path)
@@ -487,9 +489,18 @@ class MainWindow:
                     self.export_quality.get()
                 )
                 print(f"Successfully exported {output_path}")
+                success_count += 1
             except Exception as e:
                 print(f"Error exporting {path}: {e}")
-        print("Export complete.")
+                failure_count += 1
+        # Show summary dialog
+        if success_count > 0:
+            msg = f"Successfully exported {success_count} photo(s)."
+            if failure_count > 0:
+                msg += f"\n{failure_count} photo(s) failed."
+            messagebox.showinfo("Export Complete", msg)
+        else:
+            messagebox.showerror("Export Failed", "No photos were exported. Please check errors and try again.")
 
     def export_single_image(self):
         """Exports the current preview image with the watermark."""
@@ -545,8 +556,10 @@ class MainWindow:
                 self.export_quality.get()
             )
             print(f"Successfully exported {output_path}")
+            messagebox.showinfo("Export Complete", "Successfully exported 1 photo.")
         except Exception as e:
             print(f"Error exporting single image: {e}")
+            messagebox.showerror("Export Failed", "Failed to export the photo. Please check errors and try again.")
 
 
 
