@@ -518,6 +518,16 @@ class MainWindow:
 
         btns = ttk.Frame(container)
         btns.pack(fill=tk.X, pady=(15, 0))
+        def _toggle_offset_visibility_save(*args):
+            if pos_var.get() == "relative":
+                try:
+                    offset_row.pack(before=btns, fill=tk.X, pady=(10, 0))
+                except Exception:
+                    offset_row.pack(fill=tk.X, pady=(10, 0))
+            else:
+                offset_row.pack_forget()
+        pos_var.trace_add('write', _toggle_offset_visibility_save)
+        _toggle_offset_visibility_save()
         def do_save():
             name = name_var.get().strip()
             if not name:
@@ -687,6 +697,17 @@ class MainWindow:
         ttk.Button(btns, text="Save Changes", command=do_update, style='Secondary.TButton').pack(side=tk.LEFT, expand=True, fill=tk.X, padx=(0, 5))
         ttk.Button(btns, text="Delete", command=do_delete, style='Secondary.TButton').pack(side=tk.RIGHT, expand=True, fill=tk.X, padx=(5, 0))
 
+        def _toggle_offset_visibility_manage(*args):
+            if pos_var.get() == "relative":
+                try:
+                    offset_row.pack(before=btns, fill=tk.X, pady=(10, 0))
+                except Exception:
+                    offset_row.pack(fill=tk.X, pady=(10, 0))
+            else:
+                offset_row.pack_forget()
+        pos_var.trace_add('write', _toggle_offset_visibility_manage)
+        _toggle_offset_visibility_manage()
+
         def clear_fields():
             name_var.set("")
             text_var.set("")
@@ -699,6 +720,7 @@ class MainWindow:
             pos_var.set("bottom-right")
             offx_var.set(0)
             offy_var.set(0)
+            _toggle_offset_visibility_manage()
 
         def load_selected(evt=None):
             sel = listbox.curselection()
