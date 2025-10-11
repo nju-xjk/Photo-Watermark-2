@@ -182,7 +182,7 @@ class MainWindow:
 
         # Image display area
         # Fixed-size preview area to prevent layout from growing with image size
-        self.preview_width = 900
+        self.preview_width = 850
         self.preview_height = 600
         self.image_display_frame = ttk.Frame(self.center_panel, width=self.preview_width, height=self.preview_height)
         # Center the preview frame within the center panel (both horizontally and vertically)
@@ -202,7 +202,7 @@ class MainWindow:
         self.image_label.bind("<ButtonRelease-1>", self.on_drag_end)
 
         # Right panel for controls
-        self.control_panel = ttk.Frame(main_frame, style='Card.TFrame', width=320)
+        self.control_panel = ttk.Frame(main_frame, style='Card.TFrame', width=370)
         self.control_panel.pack(side=tk.RIGHT, fill=tk.Y)
         self.control_panel.pack_propagate(False)
 
