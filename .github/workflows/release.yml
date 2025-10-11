@@ -19,5 +19,7 @@ jobs:
           generateReleaseNotes: true
           draft: false
           prerelease: false
-          artifacts: release/PhotoWatermark2-win-x64.zip
+          artifacts: |
+            release/PhotoWatermark2-win-x64.zip
+            release/PhotoWatermark2-onefile-win-x64.exe
           token: ${{ secrets.GITHUB_TOKEN }}
