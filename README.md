@@ -2,6 +2,17 @@
 
 一个基于 Tkinter 的图片批量加水印工具，支持拖拽导入、九宫格定位/相对定位/手动拖拽定位、模板管理以及批量导出。
 
+## 截图（Screenshots）
+下面展示两个界面状态：
+
+- 初始界面（Initial UI）：
+
+  ![Initial UI](assets/screenshots/initial.png)
+
+- 工作中界面（Working UI）：
+
+  ![Working UI](assets/screenshots/working.png)
+
 ## 功能特性
 - 拖拽或文件/文件夹选择导入图片，侧栏缩略图列表管理
 - 水印文本、字体大小（支持自动随图片尺寸估算）、透明度、颜色设置
@@ -112,17 +123,6 @@ Photo-Watermark-2-2/
 - 发布与自动化：
   - 当仓库推送版本标签（例如 v2.0.1、v2.1.0）时，GitHub Actions 会自动创建 Release 并上传上述资产。
   - 工作流文件位置：.github/workflows/release.yml。
-
-## 截图（Screenshots）
-下面展示两个界面状态：
-
-- 初始界面（Initial UI）：
-
-  ![Initial UI](assets/screenshots/initial.png)
-
-- 工作中界面（Working UI）：
-
-  ![Working UI](assets/screenshots/working.png)
 
 ## 许可证
 未设置许可证。如需开放源代码协议，请在项目根目录添加 LICENSE 并在此处补充说明。
