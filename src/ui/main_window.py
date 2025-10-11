@@ -411,7 +411,7 @@ class MainWindow:
     def export_images(self):
         """Exports all imported images with the current watermark settings."""
         if not self.filepaths:
-            print("No images to export.")
+            messagebox.showwarning("Export", "No images to export.")
             return
 
         # Prevent exporting to any original folder used by imported images
@@ -505,7 +505,7 @@ class MainWindow:
     def export_single_image(self):
         """Exports the current preview image with the watermark."""
         if not self.current_image_path or not self.original_image:
-            print("No image in preview to export.")
+            messagebox.showwarning("Export", "No image in preview to export.")
             return
 
         # Prevent exporting to the original folder of the current image
